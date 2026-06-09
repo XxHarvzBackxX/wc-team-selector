@@ -68,10 +68,10 @@ export default function DrawApp() {
       </header>
 
       {/* Baller Diggle hero strip */}
-      <div className="border-b border-gray-800/60 bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950 px-6 py-5">
-        <div className="max-w-7xl mx-auto flex items-center gap-5">
+      <div className="border-b border-gray-800/60 bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950 px-6 py-6">
+        <div className="max-w-7xl mx-auto flex items-end gap-6">
           {/* Player card */}
-          <div className="relative shrink-0 w-16 h-24 sm:w-20 sm:h-28 rounded-xl overflow-hidden ring-2 ring-red-600/60 shadow-[0_0_24px_rgba(220,38,38,0.45)]">
+          <div className="relative shrink-0 w-28 h-40 sm:w-36 sm:h-52 rounded-2xl overflow-hidden ring-2 ring-red-600/70 shadow-[0_0_40px_rgba(220,38,38,0.5)]">
             <Image
               src="/baller-diggle.png"
               alt="Baller Diggle"
@@ -79,21 +79,24 @@ export default function DrawApp() {
               className="object-cover object-top"
               priority
             />
+            {/* Subtle gradient at base of card */}
+            <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/60 to-transparent" />
           </div>
           {/* Text */}
-          <div>
+          <div className="pb-1">
             <p className="text-xs text-gray-500 uppercase tracking-widest">Tonight's draw hosted by</p>
-            <p className="text-white font-extrabold text-xl sm:text-2xl leading-tight mt-0.5">
+            <p className="text-white font-extrabold text-2xl sm:text-3xl leading-tight mt-1">
               Baller Diggle
             </p>
-            <p className="text-red-400 text-xs font-medium tracking-wide mt-1 uppercase">
-              MHR · #67
-            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="px-2 py-0.5 rounded-full bg-red-700/60 text-red-300 text-xs font-semibold tracking-wide">MHR</span>
+              <span className="px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 text-xs font-semibold">#67</span>
+            </div>
           </div>
-          {/* Decorative pitch lines */}
-          <div className="hidden sm:flex ml-auto items-center gap-3 opacity-10 select-none" aria-hidden>
-            <div className="w-16 h-16 rounded-full border-2 border-white" />
-            <div className="w-1 h-16 bg-white rounded" />
+          {/* Decorative pitch lines — desktop only */}
+          <div className="hidden sm:flex ml-auto items-center gap-4 opacity-[0.07] select-none pb-1" aria-hidden>
+            <div className="w-20 h-20 rounded-full border-2 border-white" />
+            <div className="w-px h-20 bg-white" />
           </div>
         </div>
       </div>
