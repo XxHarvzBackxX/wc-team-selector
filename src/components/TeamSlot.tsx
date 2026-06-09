@@ -11,6 +11,12 @@ interface TeamSlotProps {
   isRevealed: boolean;
 }
 
+// Slot speed constants
+const FAST_MS = 35;       // starting interval (very fast)
+const SLOW_MS = 280;      // ending interval (crawling before snap)
+const RAMP_FRAC = 0.45;   // fraction of SPIN_WINDOW_MS before slow-down begins
+const SPIN_WINDOW_MS = 3500; // expected spin duration — ramp completes here
+
 function SlotReel({
   finalValue,
   pool,
@@ -19,30 +25,69 @@ function SlotReel({
   accentClass,
 }: {
   finalValue: string;
-  pool: string[];
+  pool: readonly string[];
   isSpinning: boolean;
   isRevealed: boolean;
   accentClass: string;
 }) {
   const [displayValue, setDisplayValue] = useState("???");
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const liveRef = useRef({ isSpinning, isRevealed, finalValue });
+  const startTimeRef = useRef(0);
+  const idxRef = useRef(0);
+
+  // Keep liveRef in sync so setTimeout callbacks see latest props
+  useEffect(() => {
+    liveRef.current = { isSpinning, isRevealed, finalValue };
+  });
 
   useEffect(() => {
-    if (isSpinning && !isRevealed) {
-      let i = 0;
-      intervalRef.current = setInterval(() => {
-        setDisplayValue(pool[i % pool.length]);
-        i++;
-      }, 80);
-    } else if (isRevealed) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      setDisplayValue(finalValue);
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      setDisplayValue("???");
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
     }
+
+    if (isRevealed) {
+      setDisplayValue(finalValue);
+      return;
+    }
+
+    if (!isSpinning) {
+      setDisplayValue("???");
+      return;
+    }
+
+    // Kick off the spin
+    startTimeRef.current = Date.now();
+    idxRef.current = Math.floor(Math.random() * pool.length);
+
+    const tick = () => {
+      const { isSpinning: spin, isRevealed: rev, finalValue: fv } = liveRef.current;
+
+      if (rev) { setDisplayValue(fv); return; }
+      if (!spin) { setDisplayValue("???"); return; }
+
+      setDisplayValue(pool[idxRef.current % pool.length]);
+      idxRef.current++;
+
+      const progress = Math.min((Date.now() - startTimeRef.current) / SPIN_WINDOW_MS, 1);
+      let ms: number;
+      if (progress < RAMP_FRAC) {
+        ms = FAST_MS;
+      } else {
+        // Cubic ease-out: starts linear, decelerates dramatically
+        const t = (progress - RAMP_FRAC) / (1 - RAMP_FRAC);
+        const eased = 1 - Math.pow(1 - t, 3);
+        ms = FAST_MS + (SLOW_MS - FAST_MS) * eased;
+      }
+
+      timerRef.current = setTimeout(tick, ms);
+    };
+
+    tick();
+
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
     };
   }, [isSpinning, isRevealed, finalValue, pool]);
 
@@ -52,7 +97,7 @@ function SlotReel({
         isRevealed
           ? `${accentClass} scale-105 shadow-lg`
           : isSpinning
-          ? "bg-gray-700 text-yellow-300 animate-pulse"
+          ? "bg-gray-700 text-yellow-300"
           : "bg-gray-800 text-gray-500"
       }`}
       style={{ minWidth: "120px", minHeight: "40px" }}
