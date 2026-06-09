@@ -3,15 +3,15 @@
 import { useCallback, useRef, useState } from "react";
 import { DrawState } from "@/types";
 import { generateDraw } from "@/lib/draw";
-import { advanceReveal, completeDraw, resetDraw, startDraw, setCountdown } from "@/lib/firebase";
+import { advanceReveal, completeDraw, resetDraw, startDraw, setCountdown, revealCard } from "@/lib/firebase";
 import { COMPANY_TEAMS } from "@/lib/teams";
 
 interface AdminPanelProps {
   drawState: DrawState | null;
 }
 
-const SPIN_DURATION_MS = 5000;       // how long each card spins
-const POST_REVEAL_PAUSE_MS = 7000;   // pause AFTER the card lands before the next spin
+const SPIN_DURATION_MS = 4000;       // how long each card spins before landing
+const POST_REVEAL_PAUSE_MS = 6000;   // pause on the revealed card before next spin starts
 const COUNTDOWN_FROM = 10;
 
 export default function AdminPanel({ drawState }: AdminPanelProps) {
@@ -53,17 +53,31 @@ export default function AdminPanel({ drawState }: AdminPanelProps) {
 
       const tick = async () => {
         try {
+          // Phase 1: start spinning team idx
           await advanceReveal(idx);
-          idx++;
-          if (idx < total) {
-            timerRef.current = setTimeout(tick, SPIN_DURATION_MS + POST_REVEAL_PAUSE_MS);
-          } else {
-            timerRef.current = setTimeout(async () => {
-              try { await completeDraw(); }
-              catch (e) { setError(`Failed to complete: ${e instanceof Error ? e.message : e}`); }
-              finally { setIsRunning(false); }
-            }, SPIN_DURATION_MS + 500);
-          }
+
+          // Phase 2: after spin duration, land the card
+          timerRef.current = setTimeout(async () => {
+            try {
+              await revealCard(idx);
+              idx++;
+
+              if (idx < total) {
+                // Phase 3: pause on revealed card, then spin the next
+                timerRef.current = setTimeout(tick, POST_REVEAL_PAUSE_MS);
+              } else {
+                // All done — complete after the final pause
+                timerRef.current = setTimeout(async () => {
+                  try { await completeDraw(); }
+                  catch (e) { setError(`Failed to complete: ${e instanceof Error ? e.message : e}`); }
+                  finally { setIsRunning(false); }
+                }, POST_REVEAL_PAUSE_MS);
+              }
+            } catch (e) {
+              setError(`Reveal failed: ${e instanceof Error ? e.message : e}`);
+              setIsRunning(false);
+            }
+          }, SPIN_DURATION_MS);
         } catch (e) {
           setError(`Firebase write failed: ${e instanceof Error ? e.message : e}`);
           setIsRunning(false);

@@ -15,8 +15,10 @@ export default function DrawBoard({ drawState }: DrawBoardProps) {
   if (isComplete && drawState?.revealOrder) {
     drawState.revealOrder.forEach((t) => revealedTeams.add(t));
   } else if (drawState?.revealOrder) {
-    for (let i = 0; i < drawState.currentRevealIndex; i++) {
-      revealedTeams.add(drawState.revealOrder[i]);
+    // Use revealedCount (cards that have fully landed), not currentRevealIndex
+    const count = drawState.revealedCount ?? -1;
+    for (let i = 0; i <= count; i++) {
+      if (drawState.revealOrder[i]) revealedTeams.add(drawState.revealOrder[i]);
     }
   }
 

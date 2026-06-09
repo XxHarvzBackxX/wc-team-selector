@@ -15,7 +15,7 @@ interface TeamSlotProps {
 const FAST_MS = 35;
 const SLOW_MS = 280;
 const RAMP_FRAC = 0.45;
-const SPIN_WINDOW_MS = 3500;
+const SPIN_WINDOW_MS = 4000;
 
 function SlotReel({
   finalValue,

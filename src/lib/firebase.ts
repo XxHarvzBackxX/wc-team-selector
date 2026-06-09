@@ -38,10 +38,16 @@ export async function startDraw(
   await setDoc(drawDoc(), {
     status: "running",
     currentRevealIndex: -1,
+    revealedCount: -1,
     revealOrder,
     results,
     countdown: null,
   });
+}
+
+/** Mark the card at revealOrder[idx] as fully landed/revealed. */
+export async function revealCard(idx: number): Promise<void> {
+  await updateDoc(drawDoc(), { revealedCount: idx });
 }
 
 /** Write (or clear) the shared countdown value so all clients see it. */

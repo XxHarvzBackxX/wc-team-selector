@@ -7,7 +7,8 @@ export interface TeamResult {
 
 export interface DrawState {
   status: DrawStatus;
-  currentRevealIndex: number;
+  currentRevealIndex: number;  // which team is currently spinning
+  revealedCount: number;       // how many teams have fully landed
   revealOrder: string[];
   results: Record<string, TeamResult>;
   countdown?: number | null;
