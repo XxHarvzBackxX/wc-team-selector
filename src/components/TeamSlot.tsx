@@ -83,7 +83,7 @@ function SlotReel({
       style={{ minWidth: "120px", minHeight: "40px" }}
     >
       {isSpinning && !isRevealed ? (
-        <span className="font-mono tracking-wider">{displayValue}</span>
+        <span className="font-mono tracking-wider">{TEAM_DISPLAY[displayValue] ?? displayValue}</span>
       ) : isRevealed ? (
         <>
           {flagCode && (

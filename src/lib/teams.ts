@@ -138,8 +138,7 @@ export const TEAM_FLAGS: Record<string, string> = {
   Uzbekistan: "uz",
 };
 
-// ─── Wikipedia links — shown when a team slot is revealed ────────────────────
-// Each URL opens the national team's Wikipedia page (squad, history, WC wins).
+// ─── Wikipedia links — men's national team pages ─────────────────────────────
 export const TEAM_WIKI: Record<string, string> = {
   Algeria: "https://en.wikipedia.org/wiki/Algeria_national_football_team",
   Argentina: "https://en.wikipedia.org/wiki/Argentina_national_football_team",
@@ -170,7 +169,7 @@ export const TEAM_WIKI: Record<string, string> = {
   Mexico: "https://en.wikipedia.org/wiki/Mexico_national_football_team",
   Morocco: "https://en.wikipedia.org/wiki/Morocco_national_football_team",
   Netherlands: "https://en.wikipedia.org/wiki/Netherlands_national_football_team",
-  "New Zealand": "https://en.wikipedia.org/wiki/New_Zealand_national_football_team",
+  "New Zealand": "https://en.wikipedia.org/wiki/New_Zealand_men%27s_national_soccer_team",
   Norway: "https://en.wikipedia.org/wiki/Norway_national_football_team",
   Panama: "https://en.wikipedia.org/wiki/Panama_national_football_team",
   Paraguay: "https://en.wikipedia.org/wiki/Paraguay_national_football_team",
@@ -179,7 +178,7 @@ export const TEAM_WIKI: Record<string, string> = {
   "Saudi Arabia": "https://en.wikipedia.org/wiki/Saudi_Arabia_national_football_team",
   Scotland: "https://en.wikipedia.org/wiki/Scotland_national_football_team",
   Senegal: "https://en.wikipedia.org/wiki/Senegal_national_football_team",
-  "South Africa": "https://en.wikipedia.org/wiki/South_Africa_national_soccer_team",
+  "South Africa": "https://en.wikipedia.org/wiki/South_Africa_men%27s_national_soccer_team",
   "South Korea": "https://en.wikipedia.org/wiki/South_Korea_national_football_team",
   Spain: "https://en.wikipedia.org/wiki/Spain_national_football_team",
   Sweden: "https://en.wikipedia.org/wiki/Sweden_national_football_team",
