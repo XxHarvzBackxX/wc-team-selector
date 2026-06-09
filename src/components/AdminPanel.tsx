@@ -10,24 +10,40 @@ interface AdminPanelProps {
   drawState: DrawState | null;
 }
 
-// ms between each team reveal
 const REVEAL_INTERVAL_MS = 4000;
-// ms the slot spins before snapping to result
 const SPIN_DURATION_MS = 3200;
+const COUNTDOWN_FROM = 3;
 
 export default function AdminPanel({ drawState }: AdminPanelProps) {
   const [isRunning, setIsRunning] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const stopTimers = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-  };
+  const stopTimers = () => { if (timerRef.current) clearTimeout(timerRef.current); };
 
   const handleStartDraw = useCallback(async () => {
     if (isRunning) return;
     setError(null);
     setIsRunning(true);
+
+    // Countdown phase
+    let n = COUNTDOWN_FROM;
+    setCountdown(n);
+
+    await new Promise<void>((resolve) => {
+      const tick = () => {
+        n--;
+        if (n > 0) {
+          setCountdown(n);
+          timerRef.current = setTimeout(tick, 900);
+        } else {
+          setCountdown(null);
+          resolve();
+        }
+      };
+      timerRef.current = setTimeout(tick, 900);
+    });
 
     try {
       const { results, revealOrder } = generateDraw();
@@ -44,13 +60,9 @@ export default function AdminPanel({ drawState }: AdminPanelProps) {
             timerRef.current = setTimeout(tick, REVEAL_INTERVAL_MS);
           } else {
             timerRef.current = setTimeout(async () => {
-              try {
-                await completeDraw();
-              } catch (e) {
-                setError(`Failed to complete draw: ${e instanceof Error ? e.message : e}`);
-              } finally {
-                setIsRunning(false);
-              }
+              try { await completeDraw(); }
+              catch (e) { setError(`Failed to complete: ${e instanceof Error ? e.message : e}`); }
+              finally { setIsRunning(false); }
             }, SPIN_DURATION_MS + 500);
           }
         } catch (e) {
@@ -69,12 +81,10 @@ export default function AdminPanel({ drawState }: AdminPanelProps) {
   const handleReset = useCallback(async () => {
     stopTimers();
     setIsRunning(false);
+    setCountdown(null);
     setError(null);
-    try {
-      await resetDraw();
-    } catch (e) {
-      setError(`Reset failed: ${e instanceof Error ? e.message : e}`);
-    }
+    try { await resetDraw(); }
+    catch (e) { setError(`Reset failed: ${e instanceof Error ? e.message : e}`); }
   }, []);
 
   const status = drawState?.status ?? "idle";
@@ -83,14 +93,20 @@ export default function AdminPanel({ drawState }: AdminPanelProps) {
     <div className="w-full rounded-2xl border border-red-700 bg-red-950/40 p-5 flex flex-col gap-4">
       <div className="flex items-center gap-2">
         <span className="text-red-400 text-lg">🔐</span>
-        <span className="text-red-300 font-semibold text-sm uppercase tracking-widest">
-          Admin Panel
-        </span>
+        <span className="text-red-300 font-semibold text-sm uppercase tracking-widest">Admin Panel</span>
       </div>
 
       {error && (
         <div className="rounded-lg bg-red-900/60 border border-red-600 px-3 py-2 text-xs text-red-300 font-mono break-all">
           ⚠️ {error}
+        </div>
+      )}
+
+      {countdown !== null && (
+        <div className="text-center py-2">
+          <span key={countdown} className="animate-countdown-pop inline-block text-5xl font-black text-white">
+            {countdown}
+          </span>
         </div>
       )}
 
@@ -102,7 +118,6 @@ export default function AdminPanel({ drawState }: AdminPanelProps) {
         >
           🎰 Start Draw
         </button>
-
         <button
           onClick={handleReset}
           className="px-5 py-2 rounded-lg bg-red-700 text-white font-bold text-sm hover:bg-red-600 transition-colors"
@@ -112,12 +127,8 @@ export default function AdminPanel({ drawState }: AdminPanelProps) {
       </div>
 
       <p className="text-xs text-gray-500">
-        Firebase status:{" "}
-        <span className="text-gray-300 font-mono">{status}</span>
-        {"  "}|{"  "}Local:{" "}
-        <span className="text-gray-300 font-mono">
-          {isRunning ? "revealing…" : "idle"}
-        </span>
+        Firebase: <span className="text-gray-300 font-mono">{status}</span>
+        {"  |  "}Local: <span className="text-gray-300 font-mono">{isRunning ? (countdown !== null ? `countdown ${countdown}…` : "revealing…") : "idle"}</span>
       </p>
     </div>
   );

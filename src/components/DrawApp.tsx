@@ -1,18 +1,46 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import confetti from "canvas-confetti";
 import { DrawState } from "@/types";
 import { subscribeToDrawState } from "@/lib/firebase";
+import { COMPANY_TEAMS } from "@/lib/teams";
 import DrawBoard from "./DrawBoard";
 import AdminPanel from "./AdminPanel";
 import BallerCard from "./BallerCard";
+
+function ShareButton({ drawState }: { drawState: DrawState }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    const lines = COMPANY_TEAMS.map((team) => {
+      const r = drawState.results?.[team];
+      return r ? `${team}: ${r.major} + ${r.minor}` : `${team}: -`;
+    });
+    const text = ["🏆 FIFA WC 2026 Sweepstakes Results", "", ...lines].join("\n");
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white text-sm font-semibold transition-colors flex items-center gap-2"
+    >
+      {copied ? "✅ Copied!" : "📋 Copy Results"}
+    </button>
+  );
+}
 
 export default function DrawApp() {
   const searchParams = useSearchParams();
   const [drawState, setDrawState] = useState<DrawState | null>(null);
   const [connected, setConnected] = useState(false);
   const [firebaseError, setFirebaseError] = useState<string | null>(null);
+  const prevStatusRef = useRef<string | null>(null);
 
   const adminSecret = process.env.NEXT_PUBLIC_ADMIN_SECRET;
   const isAdmin =
@@ -24,6 +52,14 @@ export default function DrawApp() {
     try {
       const unsubscribe = subscribeToDrawState(
         (state) => {
+          // Fire confetti when draw first transitions to complete
+          const newStatus = state?.status ?? "idle";
+          if (newStatus === "complete" && prevStatusRef.current !== "complete") {
+            confetti({ particleCount: 180, spread: 100, origin: { y: 0.55 } });
+            setTimeout(() => confetti({ particleCount: 80, spread: 70, origin: { x: 0.1, y: 0.6 } }), 300);
+            setTimeout(() => confetti({ particleCount: 80, spread: 70, origin: { x: 0.9, y: 0.6 } }), 500);
+          }
+          prevStatusRef.current = newStatus;
           setDrawState(state);
           setConnected(true);
           setFirebaseError(null);
@@ -54,13 +90,10 @@ export default function DrawApp() {
             <p className="text-xs text-gray-500 mt-0.5">Country Draw</p>
           </div>
         </div>
-
         <div className="flex items-center gap-2">
-          <span
-            className={`inline-block w-2 h-2 rounded-full ${
-              firebaseError ? "bg-red-500" : connected ? "bg-green-500" : "bg-yellow-500 animate-pulse"
-            }`}
-          />
+          <span className={`inline-block w-2 h-2 rounded-full ${
+            firebaseError ? "bg-red-500" : connected ? "bg-green-500" : "bg-yellow-500 animate-pulse"
+          }`} />
           <span className="text-xs text-gray-500">
             {firebaseError ? "Error" : connected ? "Live" : "Connecting…"}
           </span>
@@ -69,25 +102,28 @@ export default function DrawApp() {
 
       {/* Diggle hero */}
       <div className="border-b border-gray-800/60 bg-gradient-to-b from-gray-900 to-gray-950 flex justify-center items-center py-8 px-6">
-          <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
-              <div className="text-center sm:text-left">
-                  <p className="text-gray-500 text-m uppercase tracking-widest">Tonight's draw hosted by</p>
-              </div>
-              <BallerCard/>
+        <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+          <div className="text-center sm:text-left order-2 sm:order-1">
+            <p className="text-gray-500 text-sm uppercase tracking-widest">Tonight&apos;s draw hosted by</p>
           </div>
+          <div className="order-1 sm:order-2">
+            <BallerCard />
+          </div>
+        </div>
       </div>
 
-        {/* Firebase error banner */}
-        {firebaseError && (
-            <div className="bg-red-900/60 border-b border-red-700 text-red-300 px-4 py-2 text-xs font-mono">
+      {/* Firebase error banner */}
+      {firebaseError && (
+        <div className="bg-red-900/60 border-b border-red-700 text-red-300 px-4 py-2 text-xs font-mono">
           ⚠️ Firebase error: {firebaseError}
         </div>
       )}
 
-      {/* Status banner */}
+      {/* Status banners */}
       {status === "complete" && (
-        <div className="bg-yellow-500 text-gray-900 text-center py-2 px-4 text-sm font-bold tracking-wide">
-          🏆 Draw Complete! Good luck everyone!
+        <div className="bg-yellow-500 text-gray-900 text-center py-2 px-4 text-sm font-bold tracking-wide flex items-center justify-center gap-3">
+          <span>🏆 Draw Complete! Good luck everyone!</span>
+          {drawState && <ShareButton drawState={drawState} />}
         </div>
       )}
       {status === "running" && (
@@ -100,7 +136,6 @@ export default function DrawApp() {
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6 max-w-7xl mx-auto w-full">
         {isAdmin && <AdminPanel drawState={drawState} />}
 
-        {/* Always show the board — cards display as "not drawn" until revealed */}
         <DrawBoard drawState={drawState} />
 
         {status === "idle" && !isAdmin && (
@@ -108,7 +143,6 @@ export default function DrawApp() {
             🎰 Waiting for the draw to begin… hang tight!
           </div>
         )}
-
         {status === "idle" && isAdmin && (
           <div className="text-center py-4 text-gray-600 text-sm">
             Click <strong className="text-gray-400">Start Draw</strong> above when ready.
@@ -117,7 +151,7 @@ export default function DrawApp() {
       </main>
 
       <footer className="border-t border-gray-800 px-6 py-3 text-center text-xs text-gray-700">
-          MHR Engineering - FIFA World Cup 2026; Good luck! 🏆
+        MHR Engineering · FIFA World Cup 2026 Sweepstakes &mdash; Good luck! ��
       </footer>
     </div>
   );

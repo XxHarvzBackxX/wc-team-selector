@@ -17,3 +17,24 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Card reveal pop — quick scaleX flip illusion */
+@keyframes flip-reveal {
+  0%   { transform: scaleX(1); }
+  40%  { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+}
+.animate-flip-reveal {
+  animation: flip-reveal 0.4s ease-in-out;
+}
+
+/* Countdown number drop-in */
+@keyframes countdown-pop {
+  0%   { transform: scale(1.6); opacity: 0; }
+  30%  { transform: scale(1);   opacity: 1; }
+  70%  { transform: scale(1);   opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0; }
+}
+.animate-countdown-pop {
+  animation: countdown-pop 0.85s ease-in-out forwards;
+}

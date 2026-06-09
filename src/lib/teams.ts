@@ -42,6 +42,32 @@ export const MINOR_TEAMS: string[] = [
   "Panama",
 ];
 
+// ─── Flag emojis — add/edit entries to match your team lists ─────────────────
+export const TEAM_FLAGS: Record<string, string> = {
+  // Major teams
+  Brazil: "🇧🇷",
+  Argentina: "🇦🇷",
+  France: "🇫🇷",
+  England: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  Spain: "🇪🇸",
+  Germany: "🇩🇪",
+  Portugal: "🇵🇹",
+  Netherlands: "🇳🇱",
+  Uruguay: "🇺🇾",
+  USA: "🇺🇸",
+  // Minor teams
+  Morocco: "🇲🇦",
+  Senegal: "🇸🇳",
+  Japan: "🇯🇵",
+  Croatia: "🇭🇷",
+  Colombia: "🇨🇴",
+  Mexico: "🇲🇽",
+  Serbia: "🇷🇸",
+  Ecuador: "🇪🇨",
+  "South Korea": "🇰🇷",
+  Panama: "🇵🇦",
+};
+
 // ─── Validation ───────────────────────────────────────────────────────────────
 if (COMPANY_TEAMS.length !== MAJOR_TEAMS.length || COMPANY_TEAMS.length !== MINOR_TEAMS.length) {
   throw new Error(
