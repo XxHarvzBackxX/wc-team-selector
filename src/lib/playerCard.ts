@@ -23,8 +23,8 @@ export const PLAYER_CARDS: PlayerCard[] = [
   {
     name: "DIGGLE RONALDO",
     rating: 94,
-    position: "ST",
-    club: "MHR",
+    position: "LW",
+    club: "MHR Utd.",
     number: 67,
     image: "/baller-diggle.png",
 
@@ -40,7 +40,31 @@ export const PLAYER_CARDS: PlayerCard[] = [
     funStats: [
       { label: "DEV", value: 3 },
       { label: "BANT", value: 67 },
-      { label: "SWAG", value: 99 },
+      { label: "AURA", value: 80 },
+    ],
+  },
+
+  {
+    name: "TONY PELE",
+    rating: 99,
+    position: "ST",
+    club: "MHR Utd.",
+    number: 9,
+    image: "/baller-tony.png",
+
+    stats: [
+      { label: "PAC", value: 99 },
+      { label: "SHO", value: 85 },
+      { label: "PAS", value: 45 },
+      { label: "DRI", value: 88 },
+      { label: "DEF", value: 23 },
+      { label: "PHY", value: 95 },
+    ],
+
+    funStats: [
+      { label: "DEV", value: 99 },
+      { label: "BANT", value: 95 },
+      { label: "AURA", value: 99 },
     ],
   },
 
