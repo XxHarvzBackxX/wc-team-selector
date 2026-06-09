@@ -74,7 +74,7 @@ export const PLAYER_CARDS: PlayerCard[] = [
     position: "CAM",
     club: "MHR Utd.",
     number: 0,
-    image: "/baller-tony.png",
+    image: "/baller-reece.png",
 
     stats: [
       { label: "PAC", value: 78 },
