@@ -141,7 +141,7 @@ export default function FormationBoard() {
                     // Placeholder for missing position
                     <div
                       key={i}
-                      className="w-[148px] sm:w-[165px] lg:w-[182px] rounded-[18px] border border-gray-700/40 bg-gray-900/20 flex items-center justify-center text-gray-700 text-xs"
+                      className="w-[210px] sm:w-[230px] lg:w-[250px] rounded-[18px] border border-gray-700/40 bg-gray-900/20 flex items-center justify-center text-gray-700 text-xs"
                       style={{ aspectRatio: "13/18" }}
                     >
                       ?

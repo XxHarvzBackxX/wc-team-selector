@@ -88,14 +88,14 @@ function StatBlock({
     <div className="flex flex-col items-center gap-0.5">
       <span
         className={`font-black leading-none ${
-          size === "sm" ? "text-[9px]" : "text-sm"
+          size === "sm" ? "text-[12px]" : "text-sm"
         } ${isQuestion ? "opacity-50" : "text-white drop-shadow"}`}
       >
         {stat.value}
       </span>
       <span
         className={`font-bold uppercase tracking-wider leading-none ${
-          size === "sm" ? "text-[5px]" : "text-[9px]"
+          size === "sm" ? "text-[7px]" : "text-[9px]"
         }`}
         style={{ color: labelColor }}
       >
@@ -118,7 +118,7 @@ export default function BallerCard({
 
   const widthClass =
     size === "sm"
-      ? "w-[148px] sm:w-[165px] lg:w-[182px]"
+      ? "w-[210px] sm:w-[230px] lg:w-[250px]"
       : "w-56 sm:w-64";
 
   return (
@@ -147,26 +147,26 @@ export default function BallerCard({
       >
         <span
           className={`text-white font-black drop-shadow-lg ${
-            size === "sm" ? "text-3xl" : "text-4xl sm:text-5xl"
+            size === "sm" ? "text-4xl" : "text-4xl sm:text-5xl"
           }`}
         >
           {rating}
         </span>
         <span
           className={`text-white/90 font-extrabold tracking-widest mt-0.5 ${
-            size === "sm" ? "text-[9px]" : "text-sm"
+            size === "sm" ? "text-[11px]" : "text-sm"
           }`}
         >
           {position}
         </span>
         <span
-          className={`font-bold tracking-wider mt-1.5 ${size === "sm" ? "text-[6px]" : "text-xs"}`}
+          className={`font-bold tracking-wider mt-1.5 ${size === "sm" ? "text-[9px]" : "text-xs"}`}
           style={{ color: theme.statLabel }}
         >
           {club}
         </span>
         <span
-          className={`font-semibold ${size === "sm" ? "text-[5px]" : "text-[10px]"}`}
+          className={`font-semibold ${size === "sm" ? "text-[7px]" : "text-[10px]"}`}
           style={{ color: theme.statLabel, opacity: 0.7 }}
         >
           #{number}
@@ -194,7 +194,7 @@ export default function BallerCard({
       <div className="absolute z-20 inset-x-0" style={{ top: "63%" }}>
         <p
           className={`text-center text-white font-black uppercase drop-shadow px-2 ${
-            size === "sm" ? "text-[7px] tracking-[0.12em]" : "text-xs sm:text-sm tracking-[0.18em]"
+            size === "sm" ? "text-[10px] tracking-[0.15em]" : "text-xs sm:text-sm tracking-[0.18em]"
           }`}
         >
           {name}
