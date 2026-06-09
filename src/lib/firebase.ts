@@ -1,41 +1,40 @@
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import {
-  getDatabase,
-  ref,
-  set,
-  update,
-  onValue,
-  remove,
-  Database,
-} from "firebase/database";
+  getFirestore,
+  doc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  Firestore,
+} from "firebase/firestore";
 import { DrawState, TeamResult } from "@/types";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 let _app: FirebaseApp | null = null;
-let _db: Database | null = null;
+let _db: Firestore | null = null;
 
-function getDB(): Database {
+function getDB(): Firestore {
   if (!_db) {
     _app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    _db = getDatabase(_app);
+    _db = getFirestore(_app);
   }
   return _db;
 }
 
-const DRAW_REF = "draw";
+const drawDoc = () => doc(getDB(), "draws", "current");
 
 export async function startDraw(
   results: Record<string, TeamResult>,
   revealOrder: string[]
 ): Promise<void> {
-  await set(ref(getDB(), DRAW_REF), {
+  await setDoc(drawDoc(), {
     status: "running",
     currentRevealIndex: -1,
     revealOrder,
@@ -44,32 +43,29 @@ export async function startDraw(
 }
 
 export async function advanceReveal(nextIndex: number): Promise<void> {
-  await update(ref(getDB(), DRAW_REF), { currentRevealIndex: nextIndex });
+  await updateDoc(drawDoc(), { currentRevealIndex: nextIndex });
 }
 
 export async function completeDraw(): Promise<void> {
-  await update(ref(getDB(), DRAW_REF), { status: "complete" });
+  await updateDoc(drawDoc(), { status: "complete" });
 }
 
 export async function resetDraw(): Promise<void> {
-  await remove(ref(getDB(), DRAW_REF));
+  await deleteDoc(drawDoc());
 }
 
 export function subscribeToDrawState(
   callback: (state: DrawState | null) => void,
   onError?: (err: Error) => void
 ): () => void {
-  const drawRef = ref(getDB(), DRAW_REF);
-  // onValue returns the unsubscribe fn directly in Firebase v9+ modular API
-  const unsubscribe = onValue(
-    drawRef,
+  return onSnapshot(
+    drawDoc(),
     (snapshot) => {
-      callback(snapshot.exists() ? (snapshot.val() as DrawState) : null);
+      callback(snapshot.exists() ? (snapshot.data() as DrawState) : null);
     },
     (err) => {
-      console.error("Firebase subscription error:", err);
+      console.error("Firestore error:", err);
       onError?.(err);
     }
   );
-  return unsubscribe;
 }
