@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { DrawState } from "@/types";
 import { subscribeToDrawState } from "@/lib/firebase";
 import DrawBoard from "./DrawBoard";
@@ -65,6 +66,37 @@ export default function DrawApp() {
           </span>
         </div>
       </header>
+
+      {/* Baller Diggle hero strip */}
+      <div className="border-b border-gray-800/60 bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950 px-6 py-5">
+        <div className="max-w-7xl mx-auto flex items-center gap-5">
+          {/* Player card */}
+          <div className="relative shrink-0 w-16 h-24 sm:w-20 sm:h-28 rounded-xl overflow-hidden ring-2 ring-red-600/60 shadow-[0_0_24px_rgba(220,38,38,0.45)]">
+            <Image
+              src="/baller-diggle.png"
+              alt="Baller Diggle"
+              fill
+              className="object-cover object-top"
+              priority
+            />
+          </div>
+          {/* Text */}
+          <div>
+            <p className="text-xs text-gray-500 uppercase tracking-widest">Tonight's draw hosted by</p>
+            <p className="text-white font-extrabold text-xl sm:text-2xl leading-tight mt-0.5">
+              Baller Diggle
+            </p>
+            <p className="text-red-400 text-xs font-medium tracking-wide mt-1 uppercase">
+              MHR · #67
+            </p>
+          </div>
+          {/* Decorative pitch lines */}
+          <div className="hidden sm:flex ml-auto items-center gap-3 opacity-10 select-none" aria-hidden>
+            <div className="w-16 h-16 rounded-full border-2 border-white" />
+            <div className="w-1 h-16 bg-white rounded" />
+          </div>
+        </div>
+      </div>
 
       {/* Firebase error banner */}
       {firebaseError && (
