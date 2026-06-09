@@ -104,9 +104,24 @@ export default function DrawApp() {
   }, []);
 
   const status = drawState?.status ?? "idle";
+  const countdown = drawState?.countdown ?? null;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+
+      {/* Countdown overlay — visible to ALL clients */}
+      {countdown !== null && countdown > 0 && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-950/90 backdrop-blur-sm">
+          <p className="text-gray-400 text-sm uppercase tracking-[0.3em] mb-6">Draw starting in…</p>
+          <span
+            key={countdown}
+            className="animate-countdown-pop inline-block font-black text-white"
+            style={{ fontSize: "clamp(8rem, 25vw, 18rem)", lineHeight: 1, textShadow: "0 0 80px rgba(255,220,60,0.6), 0 4px 20px rgba(0,0,0,0.8)" }}
+          >
+            {countdown}
+          </span>
+        </div>
+      )}
       {/* Header */}
       <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">

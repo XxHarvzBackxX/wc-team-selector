@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { DrawState } from "@/types";
 import { generateDraw } from "@/lib/draw";
-import { advanceReveal, completeDraw, resetDraw, startDraw } from "@/lib/firebase";
+import { advanceReveal, completeDraw, resetDraw, startDraw, setCountdown } from "@/lib/firebase";
 import { COMPANY_TEAMS } from "@/lib/teams";
 
 interface AdminPanelProps {
@@ -16,7 +16,6 @@ const COUNTDOWN_FROM = 10;
 
 export default function AdminPanel({ drawState }: AdminPanelProps) {
   const [isRunning, setIsRunning] = useState(false);
-  const [countdown, setCountdown] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -27,18 +26,18 @@ export default function AdminPanel({ drawState }: AdminPanelProps) {
     setError(null);
     setIsRunning(true);
 
-    // Countdown phase
+    // Write countdown to Firestore so all clients see it
     let n = COUNTDOWN_FROM;
-    setCountdown(n);
+    try { await setCountdown(n); } catch { /* non-fatal */ }
 
     await new Promise<void>((resolve) => {
-      const tick = () => {
+      const tick = async () => {
         n--;
         if (n > 0) {
-          setCountdown(n);
+          try { await setCountdown(n); } catch { /* non-fatal */ }
           timerRef.current = setTimeout(tick, 900);
         } else {
-          setCountdown(null);
+          try { await setCountdown(null); } catch { /* non-fatal */ }
           resolve();
         }
       };
@@ -81,7 +80,6 @@ export default function AdminPanel({ drawState }: AdminPanelProps) {
   const handleReset = useCallback(async () => {
     stopTimers();
     setIsRunning(false);
-    setCountdown(null);
     setError(null);
     try { await resetDraw(); }
     catch (e) { setError(`Reset failed: ${e instanceof Error ? e.message : e}`); }
@@ -99,14 +97,6 @@ export default function AdminPanel({ drawState }: AdminPanelProps) {
       {error && (
         <div className="rounded-lg bg-red-900/60 border border-red-600 px-3 py-2 text-xs text-red-300 font-mono break-all">
           ⚠️ {error}
-        </div>
-      )}
-
-      {countdown !== null && (
-        <div className="text-center py-2">
-          <span key={countdown} className="animate-countdown-pop inline-block text-5xl font-black text-white">
-            {countdown}
-          </span>
         </div>
       )}
 
@@ -128,7 +118,7 @@ export default function AdminPanel({ drawState }: AdminPanelProps) {
 
       <p className="text-xs text-gray-500">
         Firebase: <span className="text-gray-300 font-mono">{status}</span>
-        {"  |  "}Local: <span className="text-gray-300 font-mono">{isRunning ? (countdown !== null ? `countdown ${countdown}…` : "revealing…") : "idle"}</span>
+        {"  |  "}Local: <span className="text-gray-300 font-mono">{isRunning ? "running…" : "idle"}</span>
       </p>
     </div>
   );

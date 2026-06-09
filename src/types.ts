@@ -10,4 +10,5 @@ export interface DrawState {
   currentRevealIndex: number;
   revealOrder: string[];
   results: Record<string, TeamResult>;
+  countdown?: number | null;
 }

@@ -9,8 +9,7 @@ import {
   onSnapshot,
   serverTimestamp,
   Firestore,
-} from "firebase/firestore";
-import { DrawState, TeamResult } from "@/types";
+} from "firebase/firestore";import { DrawState, TeamResult } from "@/types";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -41,7 +40,13 @@ export async function startDraw(
     currentRevealIndex: -1,
     revealOrder,
     results,
+    countdown: null,
   });
+}
+
+/** Write (or clear) the shared countdown value so all clients see it. */
+export async function setCountdown(value: number | null): Promise<void> {
+  await setDoc(drawDoc(), { countdown: value }, { merge: true });
 }
 
 export async function advanceReveal(nextIndex: number): Promise<void> {
