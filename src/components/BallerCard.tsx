@@ -146,9 +146,10 @@ export default function BallerCard({
         }`}
       >
         <span
-          className={`text-white font-black drop-shadow-lg ${
+          className={`text-white font-black ${
             size === "sm" ? "text-4xl" : "text-4xl sm:text-5xl"
           }`}
+          style={{ textShadow: "0 1px 4px rgba(0,0,0,0.95), 0 2px 10px rgba(0,0,0,0.85), 0 0 20px rgba(0,0,0,0.7)" }}
         >
           {rating}
         </span>
@@ -156,18 +157,19 @@ export default function BallerCard({
           className={`text-white/90 font-extrabold tracking-widest mt-0.5 ${
             size === "sm" ? "text-[11px]" : "text-sm"
           }`}
+          style={{ textShadow: "0 1px 3px rgba(0,0,0,0.95), 0 2px 8px rgba(0,0,0,0.8)" }}
         >
           {position}
         </span>
         <span
           className={`font-bold tracking-wider mt-1.5 ${size === "sm" ? "text-[9px]" : "text-xs"}`}
-          style={{ color: theme.statLabel }}
+          style={{ color: theme.statLabel, textShadow: "0 1px 3px rgba(0,0,0,0.95), 0 2px 8px rgba(0,0,0,0.8)" }}
         >
           {club}
         </span>
         <span
           className={`font-semibold ${size === "sm" ? "text-[7px]" : "text-[10px]"}`}
-          style={{ color: theme.statLabel, opacity: 0.7 }}
+          style={{ color: theme.statLabel, opacity: 0.7, textShadow: "0 1px 3px rgba(0,0,0,0.95), 0 2px 8px rgba(0,0,0,0.8)" }}
         >
           #{number}
         </span>

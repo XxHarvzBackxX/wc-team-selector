@@ -12,7 +12,7 @@ interface AdminPanelProps {
 
 const REVEAL_INTERVAL_MS = 12000;
 const SPIN_DURATION_MS = 3200;
-const COUNTDOWN_FROM = 3;
+const COUNTDOWN_FROM = 10;
 
 export default function AdminPanel({ drawState }: AdminPanelProps) {
   const [isRunning, setIsRunning] = useState(false);
