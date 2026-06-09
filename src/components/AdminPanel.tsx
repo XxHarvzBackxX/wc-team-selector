@@ -17,44 +17,64 @@ const SPIN_DURATION_MS = 3200;
 
 export default function AdminPanel({ drawState }: AdminPanelProps) {
   const [isRunning, setIsRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const stopTimers = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  };
 
   const handleStartDraw = useCallback(async () => {
     if (isRunning) return;
+    setError(null);
     setIsRunning(true);
 
-    const { results, revealOrder } = generateDraw();
-    await startDraw(results, revealOrder);
+    try {
+      const { results, revealOrder } = generateDraw();
+      await startDraw(results, revealOrder);
 
-    // Drive reveal sequence — increment currentRevealIndex in Firebase each interval.
-    // Index -1 means "all slots spinning, none revealed yet".
-    // Index 0..n-1 means that team is currently spinning then snaps to result.
-    // After last team we mark complete.
-    let idx = 0;
-    const total = COMPANY_TEAMS.length;
+      let idx = 0;
+      const total = COMPANY_TEAMS.length;
 
-    const tick = async () => {
-      await advanceReveal(idx);
-      idx++;
-      if (idx < total) {
-        timerRef.current = setTimeout(tick, REVEAL_INTERVAL_MS);
-      } else {
-        // Wait for the last slot's spin duration, then complete
-        timerRef.current = setTimeout(async () => {
-          await completeDraw();
+      const tick = async () => {
+        try {
+          await advanceReveal(idx);
+          idx++;
+          if (idx < total) {
+            timerRef.current = setTimeout(tick, REVEAL_INTERVAL_MS);
+          } else {
+            timerRef.current = setTimeout(async () => {
+              try {
+                await completeDraw();
+              } catch (e) {
+                setError(`Failed to complete draw: ${e instanceof Error ? e.message : e}`);
+              } finally {
+                setIsRunning(false);
+              }
+            }, SPIN_DURATION_MS + 500);
+          }
+        } catch (e) {
+          setError(`Firebase write failed: ${e instanceof Error ? e.message : e}`);
           setIsRunning(false);
-        }, SPIN_DURATION_MS + 500);
-      }
-    };
+        }
+      };
 
-    // Small delay before first reveal so viewers see all slots spinning first
-    timerRef.current = setTimeout(tick, 1500);
+      timerRef.current = setTimeout(tick, 1500);
+    } catch (e) {
+      setError(`Failed to start draw: ${e instanceof Error ? e.message : e}`);
+      setIsRunning(false);
+    }
   }, [isRunning]);
 
   const handleReset = useCallback(async () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
+    stopTimers();
     setIsRunning(false);
-    await resetDraw();
+    setError(null);
+    try {
+      await resetDraw();
+    } catch (e) {
+      setError(`Reset failed: ${e instanceof Error ? e.message : e}`);
+    }
   }, []);
 
   const status = drawState?.status ?? "idle";
@@ -68,6 +88,12 @@ export default function AdminPanel({ drawState }: AdminPanelProps) {
         </span>
       </div>
 
+      {error && (
+        <div className="rounded-lg bg-red-900/60 border border-red-600 px-3 py-2 text-xs text-red-300 font-mono break-all">
+          ⚠️ {error}
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-3">
         <button
           onClick={handleStartDraw}
@@ -79,17 +105,18 @@ export default function AdminPanel({ drawState }: AdminPanelProps) {
 
         <button
           onClick={handleReset}
-          disabled={isRunning && status !== "running"}
-          className="px-5 py-2 rounded-lg bg-red-700 text-white font-bold text-sm hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-5 py-2 rounded-lg bg-red-700 text-white font-bold text-sm hover:bg-red-600 transition-colors"
         >
-          🔄 Reset Draw
+          🔄 Reset / Unstick
         </button>
       </div>
 
       <p className="text-xs text-gray-500">
-        Status:{" "}
+        Firebase status:{" "}
+        <span className="text-gray-300 font-mono">{status}</span>
+        {"  "}|{"  "}Local:{" "}
         <span className="text-gray-300 font-mono">
-          {isRunning ? "revealing…" : status}
+          {isRunning ? "revealing…" : "idle"}
         </span>
       </p>
     </div>
