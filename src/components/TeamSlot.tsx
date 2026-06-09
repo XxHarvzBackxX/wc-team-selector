@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { TeamResult } from "@/types";
-import { MAJOR_TEAMS, MINOR_TEAMS, TEAM_FLAGS } from "@/lib/teams";
+import { MAJOR_TEAMS, MINOR_TEAMS, TEAM_FLAGS, TEAM_WIKI } from "@/lib/teams";
 
 interface TeamSlotProps {
   companyTeam: string;
@@ -68,6 +68,7 @@ function SlotReel({
   }, [isSpinning, isRevealed, finalValue, pool]);
 
   const flagCode = isRevealed && TEAM_FLAGS[finalValue] ? TEAM_FLAGS[finalValue] : null;
+  const wikiUrl  = isRevealed && TEAM_WIKI[finalValue]  ? TEAM_WIKI[finalValue]  : null;
 
   return (
     <div
@@ -95,7 +96,19 @@ function SlotReel({
               style={{ objectFit: "cover" }}
             />
           )}
-          <span>{finalValue}</span>
+          {wikiUrl ? (
+            <a
+              href={wikiUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 decoration-dotted hover:opacity-80 transition-opacity"
+              title={`Wikipedia: ${finalValue} national team`}
+            >
+              {finalValue}
+            </a>
+          ) : (
+            <span>{finalValue}</span>
+          )}
         </>
       ) : (
         <span className="tracking-widest opacity-40">???</span>
