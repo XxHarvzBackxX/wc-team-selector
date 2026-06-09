@@ -32,13 +32,13 @@ export default function BallerCard() {
       className="
         relative w-56 sm:w-64 shrink-0
         rounded-[18px] overflow-hidden
-        shadow-[0_8px_48px_rgba(0,0,0,0.7),0_0_60px_rgba(251,191,36,0.25)]
-        ring-1 ring-amber-400/40
+        shadow-[0_8px_48px_rgba(0,0,0,0.7),0_0_60px_rgba(232,196,42,0.35)]
+        ring-1 ring-yellow-400/50
       "
       style={{
         aspectRatio: "13/18",
         background:
-          "linear-gradient(160deg, #78350f 0%, #92400e 20%, #b45309 45%, #92400e 70%, #78350f 100%)",
+          "linear-gradient(160deg, #7a6010 0%, #c9a000 20%, #e8c42a 45%, #c9a000 70%, #7a6010 100%)",
       }}
     >
       {/* Metallic sheen overlay */}
@@ -58,8 +58,8 @@ export default function BallerCard() {
         <span className="text-amber-200/50 font-semibold text-[10px]">#{number}</span>
       </div>
 
-      {/* Player image — top 60% of card */}
-      <div className="absolute inset-x-0 top-0 z-10" style={{ height: "62%" }}>
+      {/* Player image — top 68% of card */}
+      <div className="absolute inset-x-0 top-0 z-10" style={{ height: "68%" }}>
         <Image
           src="/baller-diggle.png"
           alt={name}
@@ -67,18 +67,18 @@ export default function BallerCard() {
           className="object-cover object-top"
           priority
         />
-        {/* Fade image into card at bottom */}
+        {/* Fade image into card at bottom — shorter so legs/ball show through */}
         <div
-          className="absolute inset-x-0 bottom-0 h-20"
+          className="absolute inset-x-0 bottom-0 h-12"
           style={{
             background:
-              "linear-gradient(to top, #92400e 0%, rgba(146,64,14,0.8) 40%, transparent 100%)",
+              "linear-gradient(to top, #c9a000 0%, rgba(201,160,0,0.7) 50%, transparent 100%)",
           }}
         />
       </div>
 
       {/* Player name */}
-      <div className="absolute z-20 inset-x-0" style={{ top: "57%" }}>
+      <div className="absolute z-20 inset-x-0" style={{ top: "63%" }}>
         <p className="text-center text-white font-black text-xs sm:text-sm tracking-[0.18em] uppercase drop-shadow px-2">
           {name}
         </p>
@@ -87,13 +87,13 @@ export default function BallerCard() {
       {/* Divider */}
       <div
         className="absolute z-20 inset-x-3"
-        style={{ top: "63%", height: "1px", background: "rgba(251,191,36,0.35)" }}
+        style={{ top: "69%", height: "1px", background: "rgba(255,220,60,0.5)" }}
       />
 
       {/* Standard FIFA stats — 3 columns × 2 rows */}
       <div
         className="absolute z-20 inset-x-3 grid grid-cols-3"
-        style={{ top: "65%", gap: "4px 0" }}
+        style={{ top: "71%", gap: "4px 0" }}
       >
         {stats.map((s) => (
           <StatBlock key={s.label} stat={s} />
@@ -103,13 +103,13 @@ export default function BallerCard() {
       {/* Fun stats divider */}
       <div
         className="absolute z-20 inset-x-3"
-        style={{ top: "82%", height: "1px", background: "rgba(251,191,36,0.2)" }}
+        style={{ top: "87%", height: "1px", background: "rgba(255,220,60,0.25)" }}
       />
 
       {/* Fun stats — 3 columns × 2 rows */}
       <div
         className="absolute z-20 inset-x-3 grid grid-cols-3"
-        style={{ top: "84%", gap: "3px 0" }}
+        style={{ top: "89%", gap: "3px 0" }}
       >
         {funStats.map((s) => (
           <StatBlock key={s.label} stat={s} small />

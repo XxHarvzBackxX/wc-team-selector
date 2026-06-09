@@ -68,8 +68,20 @@ export default function DrawApp() {
       </header>
 
       {/* Diggle hero */}
-      <div className="border-b border-gray-800/60 bg-gradient-to-b from-gray-900 to-gray-950 flex justify-center items-center py-8 px-4">
-        <BallerCard />
+      <div className="border-b border-gray-800/60 bg-gradient-to-b from-gray-900 to-gray-950 flex justify-center items-center py-8 px-6">
+        <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+          <BallerCard />
+          <div className="text-center sm:text-left">
+            <p className="text-gray-500 text-xs uppercase tracking-widest">Tonight's draw hosted by</p>
+            <p className="text-white font-extrabold text-3xl sm:text-4xl leading-tight mt-1">
+              Baller<br />Diggle
+            </p>
+            <div className="flex items-center gap-2 mt-3 justify-center sm:justify-start">
+              <span className="px-2.5 py-1 rounded-full bg-red-800/60 text-red-300 text-xs font-bold tracking-wide">MHR</span>
+              <span className="px-2.5 py-1 rounded-full bg-gray-800 text-gray-400 text-xs font-bold">#67</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Firebase error banner */}
