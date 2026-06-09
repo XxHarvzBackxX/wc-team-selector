@@ -79,7 +79,7 @@ export default function FormationBoard() {
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="relative z-10 pt-6 pb-0 flex flex-col items-center gap-2">
-        <p className="text-gray-500 text-xs uppercase tracking-[0.25em]">Tonight&apos;s starting XI</p>
+        <p className="text-gray-500 text-m uppercase tracking-[0.25em]">Tonight&apos;s starting XI</p>
         <div className="flex items-center gap-3">
           <span className="text-white/30 text-sm">4</span>
           <span className="text-white/20 text-xs">·</span>
