@@ -12,7 +12,19 @@ type CardTheme = {
   statLabel: string;
 };
 
-function getCardTheme(rating: number): CardTheme {
+function getCardTheme(rating: number, isManager?: boolean): CardTheme {
+  if (isManager) {
+    // Manager — dark bottle-green with gold accents, distinct from all player tiers
+    return {
+      bg: "linear-gradient(160deg, #041408 0%, #0c2e12 20%, #1a5c25 45%, #0c2e12 70%, #041408 100%)",
+      sheen: "rgba(180,255,140,0.14)",
+      glow: "rgba(40,180,70,0.45)",
+      ring: "rgba(80,210,100,0.5)",
+      fade: "#0c2e12",
+      divider: "rgba(100,220,120,0.5)",
+      statLabel: "rgba(160,240,180,0.65)",
+    };
+  }
   if (rating >= 95) {
     // ICON / special dark purple
     return {
@@ -101,8 +113,8 @@ export default function BallerCard({
   card: PlayerCard;
   size?: "lg" | "sm";
 }) {
-  const { name, rating, position, club, number, image, stats, funStats } = card;
-  const theme = getCardTheme(rating);
+  const { name, rating, position, club, number, image, stats, funStats, isManager } = card;
+  const theme = getCardTheme(rating, isManager);
 
   const widthClass =
     size === "sm"
@@ -129,7 +141,7 @@ export default function BallerCard({
 
       {/* Top-left: rating + position + club */}
       <div
-        className={`absolute top-3 left-3 z-20 flex flex-col items-center leading-none ${
+        className={`absolute z-20 flex flex-col items-center leading-none ${
           size === "sm" ? "top-2 left-2" : "top-3 left-3"
         }`}
       >
@@ -195,31 +207,50 @@ export default function BallerCard({
         style={{ top: "69%", height: "1px", background: theme.divider }}
       />
 
-      {/* FIFA stats */}
-      <div
-        className="absolute z-20 inset-x-3 grid grid-cols-3"
-        style={{ top: "71%", gap: size === "sm" ? "3px 0" : "4px 0" }}
-      >
-        {stats.map((s) => (
-          <StatBlock key={s.label} stat={s} labelColor={theme.statLabel} size={size} />
-        ))}
-      </div>
+      {isManager ? (
+        /* Manager: large fun-stats grid fills the lower card */
+        <div
+          className="absolute z-20 inset-x-2 grid grid-cols-3"
+          style={{ top: "72%", gap: size === "sm" ? "6px 0" : "10px 0" }}
+        >
+          {funStats.map((s) => (
+            <StatBlock
+              key={s.label}
+              stat={s}
+              labelColor={theme.statLabel}
+              size={size === "sm" ? "lg" : "lg"} /* bump up relative to normal fun-stats */
+            />
+          ))}
+        </div>
+      ) : (
+        <>
+          {/* FIFA stats */}
+          <div
+            className="absolute z-20 inset-x-3 grid grid-cols-3"
+            style={{ top: "71%", gap: size === "sm" ? "3px 0" : "4px 0" }}
+          >
+            {stats.map((s) => (
+              <StatBlock key={s.label} stat={s} labelColor={theme.statLabel} size={size} />
+            ))}
+          </div>
 
-      {/* Fun stats divider */}
-      <div
-        className="absolute z-20 inset-x-3"
-        style={{ top: "87%", height: "1px", background: `${theme.divider.replace("0.5", "0.25")}` }}
-      />
+          {/* Fun stats divider */}
+          <div
+            className="absolute z-20 inset-x-3"
+            style={{ top: "87%", height: "1px", background: theme.divider.replace("0.5", "0.25") }}
+          />
 
-      {/* Fun stats */}
-      <div
-        className="absolute z-20 inset-x-3 grid grid-cols-3"
-        style={{ top: "89%", gap: "3px 0" }}
-      >
-        {funStats.map((s) => (
-          <StatBlock key={s.label} stat={s} labelColor={theme.statLabel} size="sm" />
-        ))}
-      </div>
+          {/* Fun stats */}
+          <div
+            className="absolute z-20 inset-x-3 grid grid-cols-3"
+            style={{ top: "89%", gap: "3px 0" }}
+          >
+            {funStats.map((s) => (
+              <StatBlock key={s.label} stat={s} labelColor={theme.statLabel} size="sm" />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

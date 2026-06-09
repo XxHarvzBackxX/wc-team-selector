@@ -33,7 +33,9 @@ function resolveFormation(cards: PlayerCard[]): (PlayerCard | null)[][] {
 }
 
 export default function FormationBoard() {
-  const rows = resolveFormation(PLAYER_CARDS);
+  const manager = PLAYER_CARDS.find((c) => c.isManager) ?? null;
+  const squad = PLAYER_CARDS.filter((c) => !c.isManager);
+  const rows = resolveFormation(squad);
 
   return (
     <section
@@ -151,6 +153,24 @@ export default function FormationBoard() {
           );
         })}
       </div>
+
+      {/* ── Manager dugout ──────────────────────────────────────── */}
+      {manager && (
+        <div
+          className="relative z-10 flex flex-col items-center gap-3 pb-7 pt-2 px-4"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
+        >
+          {/* Dugout label */}
+          <div className="flex items-center gap-3">
+            <div className="h-px w-16" style={{ background: "rgba(80,210,100,0.25)" }} />
+            <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-emerald-400/60">
+              The Gaffer
+            </span>
+            <div className="h-px w-16" style={{ background: "rgba(80,210,100,0.25)" }} />
+          </div>
+          <BallerCard card={manager} size="sm" />
+        </div>
+      )}
 
       {/* Bottom fade */}
       <div

@@ -13,7 +13,8 @@ export interface PlayerCard {
   club: string;
   number: number;
   image: string; // path relative to /public, e.g. "/baller-diggle.png"
-  /** Classic FIFA 6-stat block (values 0–99) */
+  isManager?: boolean; // hides FIFA stats; only funStats are shown
+  /** Classic FIFA 6-stat block (values 0–99) — omit or leave empty for managers */
   stats: CardStat[];
   /** Fun extra stats — use numbers or strings like "??" */
   funStats: CardStat[];
@@ -284,7 +285,29 @@ export const PLAYER_CARDS: PlayerCard[] = [
     ],
   },
 
-  // ── Add more cards below ────────────────────────────────────────────────────
+  // ── Manager ──────────────────────────────────────────────────────────────────
+  // Replace image with the real manager pic when available.
+  {
+    name: "THE GAFFER",
+    rating: 97,
+    position: "MGR",
+    club: "MHR Utd.",
+    number: 0,
+    image: "/baller-diggle.png", // placeholder — swap for real manager image
+    isManager: true,
+    stats: [], // managers have no FIFA stats
+
+    funStats: [
+      { label: "TACT", value: 94 },
+      { label: "MOTIV", value: 88 },
+      { label: "PRESS", value: 91 },
+      { label: "BANT", value: 72 },
+      { label: "TEA",  value: "??" },
+      { label: "FURY", value: 85 },
+    ],
+  },
+
+  // ── Add more players below ────────────────────────────────────────────────
   // {
   //   name: "ANOTHER PLAYER",
   //   rating: 88,
