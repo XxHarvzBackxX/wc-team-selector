@@ -180,7 +180,7 @@ export default function DrawApp() {
       </main>
 
       <footer className="border-t border-gray-800 px-6 py-3 text-center text-xs text-gray-700">
-        MHR Engineering · FIFA World Cup 2026 Sweepstakes &mdash; Good luck! 🏆
+        MHR Engineering · FIFA World Cup 2026 Sweepstakes &mdash; Good luck! 🏆 :: HW
       </footer>
 
       {/* Substitution-board style viewer count — fixed bottom-right */}
