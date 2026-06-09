@@ -45,7 +45,7 @@ export const PLAYER_CARDS: PlayerCard[] = [
   },
 
   {
-    name: "TONY PELE",
+    name: "TONY PELÉ",
     rating: 99,
     position: "ST",
     club: "MHR Utd.",
@@ -65,6 +65,30 @@ export const PLAYER_CARDS: PlayerCard[] = [
       { label: "DEV", value: 99 },
       { label: "BANT", value: 95 },
       { label: "AURA", value: 99 },
+    ],
+  },
+
+  {
+    name: "REECE MARADONA",
+    rating: 88,
+    position: "CAM",
+    club: "MHR Utd.",
+    number: 0,
+    image: "/baller-tony.png",
+
+    stats: [
+      { label: "PAC", value: 78 },
+      { label: "SHO", value: 85 },
+      { label: "PAS", value: 90 },
+      { label: "DRI", value: 89 },
+      { label: "DEF", value: 57 },
+      { label: "PHY", value: 72 },
+    ],
+
+    funStats: [
+      { label: "DEV", value: 87 },
+      { label: "BANT", value: "100??" },
+      { label: "AURA", value: 95 },
     ],
   },
 
