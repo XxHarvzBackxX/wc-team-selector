@@ -5,7 +5,6 @@ import {
   set,
   update,
   onValue,
-  off,
   remove,
   Database,
 } from "firebase/database";
@@ -57,11 +56,20 @@ export async function resetDraw(): Promise<void> {
 }
 
 export function subscribeToDrawState(
-  callback: (state: DrawState | null) => void
+  callback: (state: DrawState | null) => void,
+  onError?: (err: Error) => void
 ): () => void {
   const drawRef = ref(getDB(), DRAW_REF);
-  onValue(drawRef, (snapshot) => {
-    callback(snapshot.exists() ? (snapshot.val() as DrawState) : null);
-  });
-  return () => off(drawRef);
+  // onValue returns the unsubscribe fn directly in Firebase v9+ modular API
+  const unsubscribe = onValue(
+    drawRef,
+    (snapshot) => {
+      callback(snapshot.exists() ? (snapshot.val() as DrawState) : null);
+    },
+    (err) => {
+      console.error("Firebase subscription error:", err);
+      onError?.(err);
+    }
+  );
+  return unsubscribe;
 }

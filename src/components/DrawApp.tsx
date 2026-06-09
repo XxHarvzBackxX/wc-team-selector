@@ -11,6 +11,7 @@ export default function DrawApp() {
   const searchParams = useSearchParams();
   const [drawState, setDrawState] = useState<DrawState | null>(null);
   const [connected, setConnected] = useState(false);
+  const [firebaseError, setFirebaseError] = useState<string | null>(null);
 
   const adminSecret = process.env.NEXT_PUBLIC_ADMIN_SECRET;
   const isAdmin =
@@ -19,11 +20,22 @@ export default function DrawApp() {
     searchParams.get("admin") === adminSecret;
 
   useEffect(() => {
-    const unsubscribe = subscribeToDrawState((state) => {
-      setDrawState(state);
-      setConnected(true);
-    });
-    return unsubscribe;
+    try {
+      const unsubscribe = subscribeToDrawState(
+        (state) => {
+          setDrawState(state);
+          setConnected(true);
+          setFirebaseError(null);
+        },
+        (err) => {
+          setFirebaseError(err.message);
+          setConnected(false);
+        }
+      );
+      return unsubscribe;
+    } catch (err) {
+      setFirebaseError(err instanceof Error ? err.message : String(err));
+    }
   }, []);
 
   const status = drawState?.status ?? "idle";
@@ -45,14 +57,21 @@ export default function DrawApp() {
         <div className="flex items-center gap-2">
           <span
             className={`inline-block w-2 h-2 rounded-full ${
-              connected ? "bg-green-500" : "bg-gray-600"
+              firebaseError ? "bg-red-500" : connected ? "bg-green-500" : "bg-yellow-500 animate-pulse"
             }`}
           />
           <span className="text-xs text-gray-500">
-            {connected ? "Live" : "Connecting…"}
+            {firebaseError ? "Error" : connected ? "Live" : "Connecting…"}
           </span>
         </div>
       </header>
+
+      {/* Firebase error banner */}
+      {firebaseError && (
+        <div className="bg-red-900/60 border-b border-red-700 text-red-300 px-4 py-2 text-xs font-mono">
+          ⚠️ Firebase error: {firebaseError}
+        </div>
+      )}
 
       {/* Status banner */}
       {status === "complete" && (
@@ -70,20 +89,17 @@ export default function DrawApp() {
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6 max-w-7xl mx-auto w-full">
         {isAdmin && <AdminPanel drawState={drawState} />}
 
+        {/* Always show the board — cards display as "not drawn" until revealed */}
+        <DrawBoard drawState={drawState} />
+
         {status === "idle" && !isAdmin && (
-          <div className="text-center py-16 text-gray-500">
-            <div className="text-5xl mb-4">🎰</div>
-            <p className="text-lg font-medium text-gray-400">
-              Waiting for the draw to begin…
-            </p>
-            <p className="text-sm mt-2">Hang tight, the admin will start soon!</p>
+          <div className="text-center py-8 text-gray-600 text-sm">
+            🎰 Waiting for the draw to begin… hang tight!
           </div>
         )}
 
-        {status !== "idle" && <DrawBoard drawState={drawState} />}
-
         {status === "idle" && isAdmin && (
-          <div className="text-center py-8 text-gray-600 text-sm">
+          <div className="text-center py-4 text-gray-600 text-sm">
             Click <strong className="text-gray-400">Start Draw</strong> above when ready.
           </div>
         )}
