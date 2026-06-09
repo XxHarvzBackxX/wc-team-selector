@@ -53,7 +53,7 @@ export default function ViewerBoard({ count }: ViewerBoardProps) {
               fontSize: "clamp(2.5rem, 5vw, 3.5rem)",
               color: "#ff2200",
               textShadow:
-                "0 0 8px #ff4400, 0 0 20px #ff2200, 0 0 45px #cc0000",
+                "0 0 5px #ff4400, 0 0 12px rgba(255,34,0,0.55), 0 0 25px rgba(204,0,0,0.3)",
               letterSpacing: "0.08em",
             }}
           >
