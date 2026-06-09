@@ -191,6 +191,13 @@ export const TEAM_WIKI: Record<string, string> = {
   Uzbekistan: "https://en.wikipedia.org/wiki/Uzbekistan_national_football_team",
 };
 
+// ─── Display name overrides ───────────────────────────────────────────────────
+// Use for names that are too long to fit cleanly in the slot label.
+// Keys must match exactly the name used in MAJOR_TEAMS / MINOR_TEAMS.
+export const TEAM_DISPLAY: Record<string, string> = {
+  "Bosnia and Herzegovina": "Bosnia & Herzg.",
+};
+
 if (COMPANY_TEAMS.length !== MAJOR_TEAMS.length || COMPANY_TEAMS.length !== MINOR_TEAMS.length) {
   throw new Error(
     `teams.ts: All three lists must be the same length. ` +
