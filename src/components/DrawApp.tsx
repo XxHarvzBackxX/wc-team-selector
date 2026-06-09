@@ -15,6 +15,7 @@ import { COMPANY_TEAMS } from "@/lib/teams";
 import DrawBoard from "./DrawBoard";
 import AdminPanel from "./AdminPanel";
 import BallerCard from "./BallerCard";
+import ViewerBoard from "./ViewerBoard";
 
 function ShareButton({ drawState }: { drawState: DrawState }) {
   const [copied, setCopied] = useState(false);
@@ -124,12 +125,6 @@ export default function DrawApp() {
           <span className="text-xs text-gray-500">
             {firebaseError ? "Error" : connected ? "Live" : "Connecting…"}
           </span>
-          {viewerCount !== null && connected && (
-            <span className="text-xs text-gray-600 flex items-center gap-1">
-              <span>👁</span>
-              <span>{viewerCount} watching</span>
-            </span>
-          )}
         </div>
       </header>
 
@@ -184,8 +179,11 @@ export default function DrawApp() {
       </main>
 
       <footer className="border-t border-gray-800 px-6 py-3 text-center text-xs text-gray-700">
-        MHR Engineering · FIFA World Cup 2026 Sweepstakes &mdash; Good luck! ��
+        MHR Engineering · FIFA World Cup 2026 Sweepstakes &mdash; Good luck! 🏆
       </footer>
+
+      {/* Substitution-board style viewer count — fixed bottom-right */}
+      {viewerCount !== null && connected && <ViewerBoard count={viewerCount} />}
     </div>
   );
 }
