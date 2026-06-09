@@ -10,8 +10,8 @@ interface AdminPanelProps {
   drawState: DrawState | null;
 }
 
-const REVEAL_INTERVAL_MS = 12000;
-const SPIN_DURATION_MS = 3200;
+const SPIN_DURATION_MS = 3200;       // how long each card spins
+const POST_REVEAL_PAUSE_MS = 7000;   // pause AFTER the card lands before the next spin
 const COUNTDOWN_FROM = 10;
 
 export default function AdminPanel({ drawState }: AdminPanelProps) {
@@ -56,7 +56,7 @@ export default function AdminPanel({ drawState }: AdminPanelProps) {
           await advanceReveal(idx);
           idx++;
           if (idx < total) {
-            timerRef.current = setTimeout(tick, REVEAL_INTERVAL_MS);
+            timerRef.current = setTimeout(tick, SPIN_DURATION_MS + POST_REVEAL_PAUSE_MS);
           } else {
             timerRef.current = setTimeout(async () => {
               try { await completeDraw(); }
