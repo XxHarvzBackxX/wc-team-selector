@@ -12,10 +12,9 @@ import {
   subscribeToViewerCount,
 } from "@/lib/firebase";
 import { COMPANY_TEAMS } from "@/lib/teams";
-import { PLAYER_CARDS } from "@/lib/playerCard";
 import DrawBoard from "./DrawBoard";
 import AdminPanel from "./AdminPanel";
-import BallerCard from "./BallerCard";
+import FormationBoard from "./FormationBoard";
 import ViewerBoard from "./ViewerBoard";
 
 function ShareButton({ drawState }: { drawState: DrawState }) {
@@ -26,7 +25,7 @@ function ShareButton({ drawState }: { drawState: DrawState }) {
       const r = drawState.results?.[team];
       return r ? `${team}: ${r.major} + ${r.minor}` : `${team}: -`;
     });
-    const text = ["🏆 FIFA WC 2026 Sweepstakes Results", "", ...lines].join("\n");
+    const text = ["🏆 FIFA WC 2026 Country Draw Results", "", ...lines].join("\n");
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
@@ -129,17 +128,8 @@ export default function DrawApp() {
         </div>
       </header>
 
-      {/* Diggle hero */}
-      <div className="border-b border-gray-800/60 bg-gradient-to-b from-gray-900 to-gray-950 flex justify-center items-center py-8 px-6">
-        <div className="flex flex-col items-center gap-6">
-          <p className="text-gray-500 text-sm uppercase tracking-widest">Tonight&apos;s draw hosted by</p>
-          <div className="flex flex-wrap justify-center gap-6">
-            {PLAYER_CARDS.map((card) => (
-              <BallerCard key={card.name} card={card} />
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Starting XI formation */}
+      <FormationBoard />
 
       {/* Firebase error banner */}
       {firebaseError && (
@@ -162,7 +152,7 @@ export default function DrawApp() {
       )}
 
       {/* Main content */}
-      <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6 max-w-7xl mx-auto w-full">
+      <main id="draw" className="flex-1 px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6 max-w-7xl mx-auto w-full">
         {isAdmin && <AdminPanel drawState={drawState} />}
 
         <DrawBoard drawState={drawState} />
