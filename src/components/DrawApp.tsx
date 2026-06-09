@@ -4,7 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import confetti from "canvas-confetti";
 import { DrawState } from "@/types";
-import { subscribeToDrawState } from "@/lib/firebase";
+import {
+  subscribeToDrawState,
+  joinPresence,
+  leavePresence,
+  startPresenceHeartbeat,
+  subscribeToViewerCount,
+} from "@/lib/firebase";
 import { COMPANY_TEAMS } from "@/lib/teams";
 import DrawBoard from "./DrawBoard";
 import AdminPanel from "./AdminPanel";
@@ -40,7 +46,10 @@ export default function DrawApp() {
   const [drawState, setDrawState] = useState<DrawState | null>(null);
   const [connected, setConnected] = useState(false);
   const [firebaseError, setFirebaseError] = useState<string | null>(null);
+  const [viewerCount, setViewerCount] = useState<number | null>(null);
   const prevStatusRef = useRef<string | null>(null);
+  // Stable session ID for presence tracking
+  const sessionIdRef = useRef(`viewer-${Math.random().toString(36).slice(2, 10)}`);
 
   const adminSecret = process.env.NEXT_PUBLIC_ADMIN_SECRET;
   const isAdmin =
@@ -48,11 +57,11 @@ export default function DrawApp() {
     adminSecret.length > 0 &&
     searchParams.get("admin") === adminSecret;
 
+  // Draw state subscription
   useEffect(() => {
     try {
       const unsubscribe = subscribeToDrawState(
         (state) => {
-          // Fire confetti when draw first transitions to complete
           const newStatus = state?.status ?? "idle";
           if (newStatus === "complete" && prevStatusRef.current !== "complete") {
             confetti({ particleCount: 180, spread: 100, origin: { y: 0.55 } });
@@ -75,6 +84,24 @@ export default function DrawApp() {
     }
   }, []);
 
+  // Presence tracking
+  useEffect(() => {
+    const id = sessionIdRef.current;
+    joinPresence(id).catch(() => {});
+    const stopHeartbeat = startPresenceHeartbeat(id);
+    const unsubCount = subscribeToViewerCount(setViewerCount);
+
+    const handleUnload = () => { leavePresence(id).catch(() => {}); };
+    window.addEventListener("beforeunload", handleUnload);
+
+    return () => {
+      stopHeartbeat();
+      unsubCount();
+      window.removeEventListener("beforeunload", handleUnload);
+      leavePresence(id).catch(() => {});
+    };
+  }, []);
+
   const status = drawState?.status ?? "idle";
 
   return (
@@ -90,13 +117,19 @@ export default function DrawApp() {
             <p className="text-xs text-gray-500 mt-0.5">Country Draw</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <span className={`inline-block w-2 h-2 rounded-full ${
             firebaseError ? "bg-red-500" : connected ? "bg-green-500" : "bg-yellow-500 animate-pulse"
           }`} />
           <span className="text-xs text-gray-500">
             {firebaseError ? "Error" : connected ? "Live" : "Connecting…"}
           </span>
+          {viewerCount !== null && connected && (
+            <span className="text-xs text-gray-600 flex items-center gap-1">
+              <span>👁</span>
+              <span>{viewerCount} watching</span>
+            </span>
+          )}
         </div>
       </header>
 

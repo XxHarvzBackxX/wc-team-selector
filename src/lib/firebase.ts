@@ -2,10 +2,12 @@ import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import {
   getFirestore,
   doc,
+  collection,
   setDoc,
   updateDoc,
   deleteDoc,
   onSnapshot,
+  serverTimestamp,
   Firestore,
 } from "firebase/firestore";
 import { DrawState, TeamResult } from "@/types";
@@ -67,5 +69,36 @@ export function subscribeToDrawState(
       console.error("Firestore error:", err);
       onError?.(err);
     }
+  );
+}
+
+// ─── Presence / viewer count ──────────────────────────────────────────────────
+
+const presenceDoc = (id: string) => doc(getDB(), "presence", id);
+const presenceCollection = () => collection(getDB(), "presence");
+
+// Heartbeat interval — keeps the presence doc fresh
+const HEARTBEAT_MS = 30_000;
+
+export async function joinPresence(sessionId: string): Promise<void> {
+  await setDoc(presenceDoc(sessionId), { lastSeen: serverTimestamp() });
+}
+
+export async function leavePresence(sessionId: string): Promise<void> {
+  await deleteDoc(presenceDoc(sessionId));
+}
+
+export function startPresenceHeartbeat(sessionId: string): () => void {
+  const interval = setInterval(() => {
+    setDoc(presenceDoc(sessionId), { lastSeen: serverTimestamp() }).catch(() => {});
+  }, HEARTBEAT_MS);
+  return () => clearInterval(interval);
+}
+
+export function subscribeToViewerCount(callback: (count: number) => void): () => void {
+  return onSnapshot(
+    presenceCollection(),
+    (snapshot) => callback(snapshot.size),
+    (err) => console.error("Presence snapshot error:", err)
   );
 }
