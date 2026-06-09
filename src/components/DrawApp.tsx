@@ -12,6 +12,7 @@ import {
   subscribeToViewerCount,
 } from "@/lib/firebase";
 import { COMPANY_TEAMS } from "@/lib/teams";
+import { PLAYER_CARDS } from "@/lib/playerCard";
 import DrawBoard from "./DrawBoard";
 import AdminPanel from "./AdminPanel";
 import BallerCard from "./BallerCard";
@@ -130,12 +131,12 @@ export default function DrawApp() {
 
       {/* Diggle hero */}
       <div className="border-b border-gray-800/60 bg-gradient-to-b from-gray-900 to-gray-950 flex justify-center items-center py-8 px-6">
-        <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
-          <div className="text-center sm:text-left order-2 sm:order-1">
-            <p className="text-gray-500 text-sm uppercase tracking-widest">Tonight&apos;s draw hosted by</p>
-          </div>
-          <div className="order-1 sm:order-2">
-            <BallerCard />
+        <div className="flex flex-col items-center gap-6">
+          <p className="text-gray-500 text-sm uppercase tracking-widest">Tonight&apos;s draw hosted by</p>
+          <div className="flex flex-wrap justify-center gap-6">
+            {PLAYER_CARDS.map((card) => (
+              <BallerCard key={card.name} card={card} />
+            ))}
           </div>
         </div>
       </div>

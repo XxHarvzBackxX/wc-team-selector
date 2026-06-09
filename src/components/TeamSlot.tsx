@@ -67,7 +67,7 @@ function SlotReel({
     return () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; } };
   }, [isSpinning, isRevealed, finalValue, pool]);
 
-  const flag = isRevealed && TEAM_FLAGS[finalValue] ? TEAM_FLAGS[finalValue] : null;
+  const flagCode = isRevealed && TEAM_FLAGS[finalValue] ? TEAM_FLAGS[finalValue] : null;
 
   return (
     <div
@@ -83,7 +83,20 @@ function SlotReel({
       {isSpinning && !isRevealed ? (
         <span className="font-mono tracking-wider">{displayValue}</span>
       ) : isRevealed ? (
-        <>{flag && <span>{flag}</span>}<span>{finalValue}</span></>
+        <>
+          {flagCode && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`https://flagcdn.com/w20/${flagCode}.png`}
+              width={20}
+              height={15}
+              alt={finalValue}
+              className="rounded-sm shrink-0 shadow-sm"
+              style={{ objectFit: "cover" }}
+            />
+          )}
+          <span>{finalValue}</span>
+        </>
       ) : (
         <span className="tracking-widest opacity-40">???</span>
       )}

@@ -42,30 +42,32 @@ export const MINOR_TEAMS: string[] = [
   "Panama",
 ];
 
-// ─── Flag emojis — add/edit entries to match your team lists ─────────────────
+// ─── Flag image codes (ISO 3166-1 alpha-2, lowercase) ────────────────────────
+// Used with https://flagcdn.com/w40/{code}.png — no emoji fallback needed.
+// England uses the subdivision code "gb-eng" supported by flagcdn.com.
 export const TEAM_FLAGS: Record<string, string> = {
   // Major teams
-  Brazil: "🇧🇷",
-  Argentina: "🇦🇷",
-  France: "🇫🇷",
-  England: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  Spain: "🇪🇸",
-  Germany: "🇩🇪",
-  Portugal: "🇵🇹",
-  Netherlands: "🇳🇱",
-  Uruguay: "🇺🇾",
-  USA: "🇺🇸",
+  Brazil: "br",
+  Argentina: "ar",
+  France: "fr",
+  England: "gb-eng",
+  Spain: "es",
+  Germany: "de",
+  Portugal: "pt",
+  Netherlands: "nl",
+  Uruguay: "uy",
+  USA: "us",
   // Minor teams
-  Morocco: "🇲🇦",
-  Senegal: "🇸🇳",
-  Japan: "🇯🇵",
-  Croatia: "🇭🇷",
-  Colombia: "🇨🇴",
-  Mexico: "🇲🇽",
-  Serbia: "🇷🇸",
-  Ecuador: "🇪🇨",
-  "South Korea": "🇰🇷",
-  Panama: "🇵🇦",
+  Morocco: "ma",
+  Senegal: "sn",
+  Japan: "jp",
+  Croatia: "hr",
+  Colombia: "co",
+  Mexico: "mx",
+  Serbia: "rs",
+  Ecuador: "ec",
+  "South Korea": "kr",
+  Panama: "pa",
 };
 
 // ─── Validation ───────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { PLAYER_CARD, CardStat } from "@/lib/playerCard";
+import { PlayerCard, CardStat } from "@/lib/playerCard";
 
 function StatBlock({ stat, small = false }: { stat: CardStat; small?: boolean }) {
   const isQuestion = stat.value === "??";
@@ -23,8 +23,8 @@ function StatBlock({ stat, small = false }: { stat: CardStat; small?: boolean })
   );
 }
 
-export default function BallerCard() {
-  const { name, rating, position, club, number, stats, funStats } = PLAYER_CARD;
+export default function BallerCard({ card }: { card: PlayerCard }) {
+  const { name, rating, position, club, number, image, stats, funStats } = card;
 
   return (
     /* Card shell — gold gradient, FIFA proportions ~13:18 */
@@ -61,7 +61,7 @@ export default function BallerCard() {
       {/* Player image — top 68% of card */}
       <div className="absolute inset-x-0 top-0 z-10" style={{ height: "68%" }}>
         <Image
-          src="/baller-diggle.png"
+          src={image}
           alt={name}
           fill
           className="object-cover object-top"
