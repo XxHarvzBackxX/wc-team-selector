@@ -153,19 +153,20 @@ export default function DrawApp() {
 
       {/* Main content */}
       <main id="draw" className="flex-1 px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6 max-w-7xl mx-auto w-full">
-        {isAdmin && <AdminPanel drawState={drawState} />}
+        <p className="text-gray-500 text-xs uppercase tracking-[0.25em]">Tonight&apos;s country draw... presented by MHR United&apos;s Academy</p>
+        {isAdmin && <AdminPanel drawState={drawState}/>}
 
-        <DrawBoard drawState={drawState} />
+        <DrawBoard drawState={drawState}/>
 
         {status === "idle" && !isAdmin && (
-          <div className="text-center py-8 text-gray-600 text-sm">
-            🎰 Waiting for the draw to begin… hang tight!
-          </div>
+            <div className="text-center py-8 text-gray-600 text-sm">
+              🎰 Waiting for the draw to begin… hang tight!
+            </div>
         )}
         {status === "idle" && isAdmin && (
-          <div className="text-center py-4 text-gray-600 text-sm">
-            Click <strong className="text-gray-400">Start Draw</strong> above when ready.
-          </div>
+            <div className="text-center py-4 text-gray-600 text-sm">
+              Click <strong className="text-gray-400">Start Draw</strong> above when ready.
+            </div>
         )}
       </main>
 
