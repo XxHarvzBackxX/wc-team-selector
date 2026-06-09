@@ -72,14 +72,7 @@ export default function DrawApp() {
         <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
           <BallerCard />
           <div className="text-center sm:text-left">
-            <p className="text-gray-500 text-xs uppercase tracking-widest">Tonight's draw hosted by</p>
-            <p className="text-white font-extrabold text-3xl sm:text-4xl leading-tight mt-1">
-              Baller<br />Diggle
-            </p>
-            <div className="flex items-center gap-2 mt-3 justify-center sm:justify-start">
-              <span className="px-2.5 py-1 rounded-full bg-red-800/60 text-red-300 text-xs font-bold tracking-wide">MHR</span>
-              <span className="px-2.5 py-1 rounded-full bg-gray-800 text-gray-400 text-xs font-bold">#67</span>
-            </div>
+            <p className="text-gray-500 text-m uppercase tracking-widest">Tonight's draw hosted by</p>
           </div>
         </div>
       </div>
