@@ -6,7 +6,7 @@ export interface CardStat {
 }
 
 export const PLAYER_CARD = {
-  name: "BALLER DIGGLE",
+  name: "DIGGLE RONALDO",
   rating: 94,
   position: "ST",
   club: "MHR",
@@ -24,11 +24,8 @@ export const PLAYER_CARD = {
 
   // Fun extra stats — use numbers or strings like "??"
   funStats: [
-    { label: "DEV", value: "??" },
-    { label: "VIBE", value: 100 },
-    { label: "CHAT", value: "??" },
-    { label: "BANT", value: 69 },
-    { label: "LUCK", value: "??" },
+    { label: "DEV", value: 3 },
+    { label: "BANT", value: 67 },
     { label: "SWAG", value: 99 },
   ] satisfies CardStat[],
 };

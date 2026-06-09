@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FIFA 26 WC Sweepstakes",
-  description: "Live FIFA World Cup 2026 team draw for your sweepstakes",
+  title: "MHR Engineering FIFA 26 WC Draw",
+  description: "MHR Engineering 'Last Man Standing' - Live FIFA World Cup 2026 country draw!",
 };
 
 export default function RootLayout({

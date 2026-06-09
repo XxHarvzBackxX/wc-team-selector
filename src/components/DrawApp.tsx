@@ -49,9 +49,9 @@ export default function DrawApp() {
           <span className="text-3xl">⚽</span>
           <div>
             <h1 className="text-xl font-bold tracking-tight leading-none">
-              FIFA World Cup 2026
+              MHR Engineering - FIFA World Cup 2026
             </h1>
-            <p className="text-xs text-gray-500 mt-0.5">Sweepstakes Draw</p>
+            <p className="text-xs text-gray-500 mt-0.5">Country Draw</p>
           </div>
         </div>
 
@@ -67,7 +67,7 @@ export default function DrawApp() {
         </div>
       </header>
 
-      {/* Baller Diggle hero */}
+      {/* Diggle hero */}
       <div className="border-b border-gray-800/60 bg-gradient-to-b from-gray-900 to-gray-950 flex justify-center items-center py-8 px-4">
         <BallerCard />
       </div>
@@ -112,7 +112,7 @@ export default function DrawApp() {
       </main>
 
       <footer className="border-t border-gray-800 px-6 py-3 text-center text-xs text-gray-700">
-        FIFA World Cup 2026 Sweepstakes &mdash; Good luck! 🏆
+          MHR Engineering - FIFA World Cup 2026; Good luck! 🏆
       </footer>
     </div>
   );
