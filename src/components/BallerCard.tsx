@@ -61,15 +61,15 @@ function getCardTheme(rating: number, isManager?: boolean): CardTheme {
       statLabel: "rgba(170,215,255,0.65)",
     };
   }
-  // Bronze
+  // Also silver/blue for anything below 85 — no bronze singles out low-rated players
   return {
-    bg: "linear-gradient(160deg, #1a1008 0%, #422010 20%, #845025 45%, #422010 70%, #1a1008 100%)",
-    sheen: "rgba(255,195,120,0.15)",
-    glow: "rgba(150,90,25,0.4)",
-    ring: "rgba(200,135,50,0.5)",
-    fade: "#422010",
-    divider: "rgba(215,155,65,0.5)",
-    statLabel: "rgba(230,185,115,0.65)",
+    bg: "linear-gradient(160deg, #12202e 0%, #1e3a55 20%, #336699 45%, #1e3a55 70%, #12202e 100%)",
+    sheen: "rgba(170,215,255,0.2)",
+    glow: "rgba(50,130,230,0.4)",
+    ring: "rgba(80,170,255,0.5)",
+    fade: "#1e3a55",
+    divider: "rgba(90,185,255,0.5)",
+    statLabel: "rgba(170,215,255,0.65)",
   };
 }
 
