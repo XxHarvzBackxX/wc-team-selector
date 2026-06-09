@@ -208,8 +208,8 @@ export const PLAYER_CARDS: PlayerCard[] = [
 
     funStats: [
       { label: "DEV", value: 80 },
-      { label: "BANT", value: 83 },
-      { label: "AURA", value: 22 },
+      { label: "BANT", value: 88 },
+      { label: "AURA", value: 63 },
     ],
   },
 

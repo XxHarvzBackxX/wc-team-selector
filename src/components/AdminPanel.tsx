@@ -10,7 +10,7 @@ interface AdminPanelProps {
   drawState: DrawState | null;
 }
 
-const REVEAL_INTERVAL_MS = 4000;
+const REVEAL_INTERVAL_MS = 12000;
 const SPIN_DURATION_MS = 3200;
 const COUNTDOWN_FROM = 3;
 
