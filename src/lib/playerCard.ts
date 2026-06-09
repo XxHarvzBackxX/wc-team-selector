@@ -288,22 +288,22 @@ export const PLAYER_CARDS: PlayerCard[] = [
   // ── Manager ──────────────────────────────────────────────────────────────────
   // Replace image with the real manager pic when available.
   {
-    name: "THE GAFFER",
+    name: "HARVEY SOUTHGATE",
     rating: 97,
-    position: "MGR",
+    position: "THE GAFFER",
     club: "MHR Utd.",
     number: 0,
-    image: "/baller-diggle.png", // placeholder — swap for real manager image
+    image: "/gaffer-harvey.png", // placeholder — swap for real manager image
     isManager: true,
     stats: [], // managers have no FIFA stats
 
     funStats: [
       { label: "TACT", value: 94 },
       { label: "MOTIV", value: 88 },
-      { label: "PRESS", value: 91 },
-      { label: "BANT", value: 72 },
-      { label: "TEA",  value: "??" },
-      { label: "FURY", value: 85 },
+      { label: "FURY", value: 99 },
+      { label: "DEV", value: 99 },
+      { label: "BANT", value: 0 },
+      { label: "AURA", value: 55 },
     ],
   },
 
