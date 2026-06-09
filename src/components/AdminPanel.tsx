@@ -10,7 +10,7 @@ interface AdminPanelProps {
   drawState: DrawState | null;
 }
 
-const SPIN_DURATION_MS = 3200;       // how long each card spins
+const SPIN_DURATION_MS = 5000;       // how long each card spins
 const POST_REVEAL_PAUSE_MS = 7000;   // pause AFTER the card lands before the next spin
 const COUNTDOWN_FROM = 10;
 
