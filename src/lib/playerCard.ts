@@ -118,7 +118,7 @@ export const PLAYER_CARDS: PlayerCard[] = [
   },
 
   {
-    name: "KOO ROODSWAZAKY",
+    name: "KOO KEANE",
     rating: 89,
     position: "LDM",
     club: "MHR Utd.",
