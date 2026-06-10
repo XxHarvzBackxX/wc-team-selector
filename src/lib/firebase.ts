@@ -106,10 +106,22 @@ export function startPresenceHeartbeat(sessionId: string): () => void {
   return () => clearInterval(interval);
 }
 
+// A session is "live" if its lastSeen is within 3× the heartbeat window.
+// Client-side filter so stale docs (from crashed tabs, mobile etc.) are
+// excluded without needing Firestore index or explicit cleanup.
+const PRESENCE_TTL_MS = HEARTBEAT_MS * 3; // 90 s
+
 export function subscribeToViewerCount(callback: (count: number) => void): () => void {
   return onSnapshot(
     presenceCollection(),
-    (snapshot) => callback(snapshot.size),
+    (snapshot) => {
+      const cutoff = Date.now() - PRESENCE_TTL_MS;
+      const live = snapshot.docs.filter((d) => {
+        const ts = d.data().lastSeen?.toMillis?.();
+        return typeof ts === "number" && ts > cutoff;
+      });
+      callback(live.length);
+    },
     (err) => console.error("Presence snapshot error:", err)
   );
 }
