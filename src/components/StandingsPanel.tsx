@@ -10,7 +10,7 @@ import {
   NationStanding,
   SweepstakesEntry,
 } from "@/types";
-import { buildSweepstakesLeaderboard, fetchBracket, fetchStandings, toCanonicalName } from "@/lib/standings";
+import { buildESPNToCanonicalMap, buildSweepstakesLeaderboard, fetchBracket, fetchStandings, toCanonicalName } from "@/lib/standings";
 import { TEAM_FLAGS } from "@/lib/teams";
 
 // ─── Flag helper ──────────────────────────────────────────────────────────────
@@ -342,34 +342,17 @@ function SweepstakesLeaderboard({ entries }: { entries: SweepstakesEntry[] }) {
 
 // ─── WC Group Table ───────────────────────────────────────────────────────────
 
-function isOwnedMatch(espnName: string, ownedNations: Set<string>): boolean {
-  // Convert ESPN name to canonical before comparing, so "United States" matches "USA" etc.
-  const canonical = toCanonicalName(espnName).toLowerCase();
-  for (const owned of ownedNations) {
-    if (canonical === owned.toLowerCase()) return true;
-  }
-  // Fallback: partial match on the raw ESPN name
-  const lower = espnName.toLowerCase();
-  for (const owned of ownedNations) {
-    const ownedLower = owned.toLowerCase();
-    if (lower.includes(ownedLower) || ownedLower.includes(lower)) return true;
-  }
-  return false;
-}
-
 function GroupTeamRow({
   team,
   position,
-  isOwned,
   isQualifying,
+  canonicalName,
 }: {
   team: NationStanding;
   position: number;
-  isOwned: boolean;
   isQualifying: boolean;
+  canonicalName: string;
 }) {
-  // Only show eliminated styling once all 3 group games have been played.
-  // ESPN can send premature elimination notes after a single loss.
   const isEliminated = team.eliminated && team.played >= 3;
 
   return (
@@ -378,11 +361,7 @@ function GroupTeamRow({
       style={{
         gridTemplateColumns: "2rem 1fr 2rem 2rem 2rem 2rem 3rem 2.5rem",
         borderTop: "1px solid rgba(255,255,255,0.05)",
-        background: isEliminated
-          ? "rgba(220,38,38,0.04)"
-          : isOwned
-            ? "rgba(255,220,0,0.05)"
-            : "transparent",
+        background: isEliminated ? "rgba(220,38,38,0.04)" : "transparent",
         opacity: isEliminated ? 0.65 : 1,
       }}
     >
@@ -403,25 +382,17 @@ function GroupTeamRow({
       {/* Team name + flag */}
       <span className="flex items-center gap-1.5 truncate">
         <span className={isEliminated ? "grayscale" : ""} style={{ display: "inline-flex" }}>
-          <Flag name={toCanonicalName(team.name)} size={14} />
+          <Flag name={canonicalName} size={14} />
         </span>
         <span
           className="truncate text-xs"
           style={{
-            color: isEliminated
-              ? "rgba(255,255,255,0.35)"
-              : isOwned
-                ? "rgba(255,220,80,0.9)"
-                : "rgba(255,255,255,0.75)",
-            fontWeight: isOwned ? 600 : 400,
+            color: isEliminated ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.75)",
             textDecoration: isEliminated ? "line-through" : "none",
           }}
         >
           {team.name}
         </span>
-        {isOwned && !isEliminated && (
-          <span className="text-[9px] text-yellow-500/60 shrink-0" title="Your sweepstake nation">★</span>
-        )}
         {isEliminated && <EliminatedBadge size="xs" />}
       </span>
 
@@ -446,11 +417,7 @@ function GroupTeamRow({
         className="text-right text-sm font-bold"
         style={{
           fontFamily: "var(--font-orbitron), monospace",
-          color: isEliminated
-            ? "rgba(252,165,165,0.5)"
-            : isOwned
-              ? "rgba(255,220,80,0.9)"
-              : "rgba(255,255,255,0.85)",
+          color: isEliminated ? "rgba(252,165,165,0.5)" : "rgba(255,255,255,0.85)",
         }}
       >
         {team.points}
@@ -459,7 +426,13 @@ function GroupTeamRow({
   );
 }
 
-function GroupTable({ group, ownedNations }: { group: GroupStanding; ownedNations: Set<string> }) {
+function GroupTable({
+  group,
+  espnToCanonical,
+}: {
+  group: GroupStanding;
+  espnToCanonical: Map<string, string>;
+}) {
   return (
     <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
       {/* Group header */}
@@ -494,8 +467,8 @@ function GroupTable({ group, ownedNations }: { group: GroupStanding; ownedNation
           key={team.name}
           team={team}
           position={idx + 1}
-          isOwned={isOwnedMatch(team.name, ownedNations)}
           isQualifying={idx < 2}
+          canonicalName={espnToCanonical.get(team.name) ?? toCanonicalName(team.name)}
         />
       ))}
     </div>
@@ -511,6 +484,7 @@ interface StandingsPanelProps {
 export default function StandingsPanel({ drawState }: StandingsPanelProps) {
   const [groups, setGroups] = useState<GroupStanding[] | null>(null);
   const [bracket, setBracket] = useState<BracketResponse | null>(null);
+  const [espnToCanonical, setEspnToCanonical] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
@@ -528,6 +502,7 @@ export default function StandingsPanel({ drawState }: StandingsPanelProps) {
         ]);
         if (!cancelled) {
           setGroups(standingsData.groups);
+          setEspnToCanonical(buildESPNToCanonicalMap(standingsData.groups));
           setBracket(bracketData);
           setFetchedAt(standingsData.fetchedAt);
         }
@@ -545,15 +520,6 @@ export default function StandingsPanel({ drawState }: StandingsPanelProps) {
       clearInterval(interval);
     };
   }, []);
-
-  // Build the set of nations drawn by someone
-  const ownedNations = new Set<string>();
-  if (drawState?.results) {
-    for (const result of Object.values(drawState.results)) {
-      if (result.major) ownedNations.add(result.major);
-      if (result.minor) ownedNations.add(result.minor);
-    }
-  }
 
   const knockoutResults: NationKnockoutResult[] = bracket?.results ?? [];
   const isKnockout = bracket?.phase === "knockout" && knockoutResults.length > 0;
@@ -611,11 +577,11 @@ export default function StandingsPanel({ drawState }: StandingsPanelProps) {
             ⚽ WC 2026 Group Standings
           </h2>
           <p className="text-[10px] text-gray-600 mb-3">
-            ★ = nation drawn by someone in the sweepstakes &nbsp;·&nbsp; green position = qualifying
+            Green position number = currently qualifying for knockout stage
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {groups.map((group) => (
-              <GroupTable key={group.group} group={group} ownedNations={ownedNations} />
+              <GroupTable key={group.group} group={group} espnToCanonical={espnToCanonical} />
             ))}
           </div>
         </section>

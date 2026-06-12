@@ -7,7 +7,7 @@ import {
   StandingsResponse,
   SweepstakesEntry,
 } from "@/types";
-import { COMPANY_TEAMS } from "./teams";
+import { COMPANY_TEAMS, MAJOR_TEAMS, MINOR_TEAMS } from "./teams";
 
 // ─── Client-side fetches ──────────────────────────────────────────────────────
 
@@ -80,6 +80,28 @@ export function toCanonicalName(espnName: string): string {
   return ESPN_TO_CANONICAL.get(espnName.toLowerCase()) ?? espnName;
 }
 
+/**
+ * Builds a map of ESPN display name → canonical name by running each of our
+ * known nation names through the existing fuzzy-match logic in reverse.
+ * This handles ANY ESPN spelling automatically — no manual alias list needed.
+ * e.g. "Cabo Verde" → "Cape Verde", "Curaçao" → "Curacao", etc.
+ */
+export function buildESPNToCanonicalMap(
+  groups: GroupStanding[],
+): Map<string, string> {
+  const nationMap = buildNationMap(groups);
+  const allCanonical = [...MAJOR_TEAMS, ...MINOR_TEAMS];
+  const result = new Map<string, string>();
+
+  for (const canonical of allCanonical) {
+    const standing = findNation(canonical, nationMap);
+    if (standing) {
+      result.set(standing.name, canonical); // ESPN name → our canonical name
+    }
+  }
+
+  return result;
+}
 export function findNation(
   name: string,
   nationMap: Map<string, NationStanding>,
