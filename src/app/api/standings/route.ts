@@ -12,19 +12,44 @@ function statValue(stats: { name: string; value: number }[], name: string): numb
   return stats.find((s) => s.name === name)?.value ?? 0;
 }
 
+/**
+ * ESPN standings entries can carry a `note` object:
+ *   { color: "00ff00", description: "Clinched knockout stage", abbreviation: "x" }
+ *   { color: "ff0000", description: "Eliminated", abbreviation: "e" }
+ * We treat any note with abbreviation "e" (or red-ish colour) as eliminated.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseNote(entry: any): { eliminated: boolean; note: string | null } {
+  const note = entry.note ?? entry.clincher ?? null;
+  if (!note) return { eliminated: false, note: null };
+
+  const desc: string = note.description ?? note.shortDescription ?? "";
+  const abbr: string = (note.abbreviation ?? "").toLowerCase();
+  const color: string = (note.color ?? "").toLowerCase().replace("#", "");
+
+  // Red-ish colours or "e" abbreviation → eliminated
+  const isEliminated =
+    abbr === "e" ||
+    desc.toLowerCase().includes("eliminat") ||
+    color === "ff0000" ||
+    color === "d00" ||
+    color === "red";
+
+  return { eliminated: isEliminated, note: desc || null };
+}
+
 function parseEntries(
-  entries: {
-    team: { displayName?: string; name?: string; location?: string };
-    stats: { name: string; value: number }[];
-  }[],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  entries: any[],
   groupName: string,
 ): NationStanding[] {
   return entries.map((entry, idx) => {
     const name =
-      entry.team.displayName ?? entry.team.location ?? entry.team.name ?? "Unknown";
-    const stats = entry.stats ?? [];
+      entry.team?.displayName ?? entry.team?.location ?? entry.team?.name ?? "Unknown";
+    const stats: { name: string; value: number }[] = entry.stats ?? [];
     const gf = statValue(stats, "pointsFor") || statValue(stats, "goalsFor");
     const ga = statValue(stats, "pointsAgainst") || statValue(stats, "goalsAgainst");
+    const { eliminated, note } = parseNote(entry);
     return {
       name,
       played: statValue(stats, "gamesPlayed"),
@@ -37,6 +62,8 @@ function parseEntries(
       points: statValue(stats, "points"),
       group: groupName,
       position: idx + 1,
+      eliminated,
+      note,
     };
   });
 }
@@ -60,7 +87,6 @@ function parseESPN(data: any): GroupStanding[] {
   // Shape 2: data.standings.entries[] flat list (league-style)
   const flat = data?.standings?.entries ?? data?.entries ?? [];
   if (flat.length) {
-    // ESPN sometimes puts a "group" stat on each entry
     const grouped: Record<string, typeof flat> = {};
     for (const entry of flat) {
       const grpStat = entry.stats?.find(
@@ -105,7 +131,6 @@ export async function GET(): Promise<Response> {
 
     return Response.json(body, {
       headers: {
-        // Allow browsers to cache for 5 min too
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60",
       },
     });

@@ -1,13 +1,15 @@
 import {
+  BracketResponse,
   DrawState,
   GroupStanding,
+  NationKnockoutResult,
   NationStanding,
   StandingsResponse,
   SweepstakesEntry,
 } from "@/types";
 import { COMPANY_TEAMS } from "./teams";
 
-// ─── Client-side fetch ────────────────────────────────────────────────────────
+// ─── Client-side fetches ──────────────────────────────────────────────────────
 
 export async function fetchStandings(): Promise<StandingsResponse> {
   const res = await fetch("/api/standings");
@@ -15,9 +17,15 @@ export async function fetchStandings(): Promise<StandingsResponse> {
   return res.json() as Promise<StandingsResponse>;
 }
 
+export async function fetchBracket(): Promise<BracketResponse> {
+  const res = await fetch("/api/bracket");
+  if (!res.ok) throw new Error(`bracket fetch failed: ${res.status}`);
+  return res.json() as Promise<BracketResponse>;
+}
+
 // ─── Lookup helpers ───────────────────────────────────────────────────────────
 
-/** Build a flat map of nation display-name → NationStanding for quick lookups */
+/** Build a flat map of nation display-name (lowercase) → NationStanding */
 export function buildNationMap(
   groups: GroupStanding[],
 ): Map<string, NationStanding> {
@@ -30,10 +38,20 @@ export function buildNationMap(
   return map;
 }
 
+/** Build a flat map of nation name (lowercase) → NationKnockoutResult */
+export function buildKnockoutMap(
+  results: NationKnockoutResult[],
+): Map<string, NationKnockoutResult> {
+  const map = new Map<string, NationKnockoutResult>();
+  for (const r of results) {
+    map.set(r.name.toLowerCase(), r);
+  }
+  return map;
+}
+
 /**
  * Match a WC nation name (from our teams.ts list) to an ESPN team entry.
- * ESPN sometimes uses different spellings (e.g. "United States" vs "USA",
- * "South Korea" vs "Korea Republic"), so we try a few fallbacks.
+ * ESPN sometimes uses different spellings, so we try a few fallbacks.
  */
 const ESPN_NAME_OVERRIDES: Record<string, string[]> = {
   usa: ["united states", "usa", "united states men's national soccer team"],
@@ -66,13 +84,34 @@ export function findNation(
   return null;
 }
 
+export function findKnockout(
+  name: string,
+  knockoutMap: Map<string, NationKnockoutResult>,
+): NationKnockoutResult | null {
+  const key = name.toLowerCase();
+  if (knockoutMap.has(key)) return knockoutMap.get(key)!;
+
+  const overrides = ESPN_NAME_OVERRIDES[key] ?? [];
+  for (const alt of overrides) {
+    if (knockoutMap.has(alt)) return knockoutMap.get(alt)!;
+  }
+
+  for (const [mapKey, result] of knockoutMap) {
+    if (mapKey.includes(key) || key.includes(mapKey)) return result;
+  }
+
+  return null;
+}
+
 // ─── Sweepstakes leaderboard ──────────────────────────────────────────────────
 
 export function buildSweepstakesLeaderboard(
   groups: GroupStanding[],
   drawState: DrawState | null,
+  knockoutResults: NationKnockoutResult[] = [],
 ): SweepstakesEntry[] {
   const nationMap = buildNationMap(groups);
+  const knockoutMap = buildKnockoutMap(knockoutResults);
   const drawComplete = drawState?.status === "complete" || drawState?.status === "running";
 
   const entries: SweepstakesEntry[] = COMPANY_TEAMS.map((companyTeam) => {
@@ -85,18 +124,33 @@ export function buildSweepstakesLeaderboard(
         minorTeam: null,
         majorPoints: null,
         minorPoints: null,
+        majorKnockout: null,
+        minorKnockout: null,
         totalPoints: null,
         status: "no-draw",
+        bothEliminated: false,
       };
     }
 
     const majorNation = findNation(result.major, nationMap);
     const minorNation = findNation(result.minor, nationMap);
+    const majorKO = findKnockout(result.major, knockoutMap);
+    const minorKO = findKnockout(result.minor, knockoutMap);
 
-    const majorPoints = majorNation?.played ? majorNation.points : null;
-    const minorPoints = minorNation?.played ? minorNation.points : null;
+    const majorGroupPts = majorNation?.played ? majorNation.points : null;
+    const minorGroupPts = minorNation?.played ? minorNation.points : null;
+    const majorBonus = majorKO?.bonusPoints ?? 0;
+    const minorBonus = minorKO?.bonusPoints ?? 0;
+
+    const majorPoints = majorGroupPts !== null ? majorGroupPts + majorBonus : null;
+    const minorPoints = minorGroupPts !== null ? minorGroupPts + minorBonus : null;
 
     const hasAnyPoints = majorPoints !== null || minorPoints !== null;
+
+    // A nation is eliminated if ESPN marks it so, OR if it has a knockout result
+    // showing alive=false, OR if group stage is complete and it didn't qualify
+    const majorElim = majorNation?.eliminated || (majorKO ? !majorKO.alive : false);
+    const minorElim = minorNation?.eliminated || (minorKO ? !minorKO.alive : false);
 
     return {
       companyTeam,
@@ -104,15 +158,23 @@ export function buildSweepstakesLeaderboard(
       minorTeam: result.minor,
       majorPoints,
       minorPoints,
+      majorKnockout: majorKO,
+      minorKnockout: minorKO,
       totalPoints: hasAnyPoints ? (majorPoints ?? 0) + (minorPoints ?? 0) : null,
       status: hasAnyPoints ? "ok" : "no-matches",
+      bothEliminated: majorElim && minorElim,
     };
   });
 
   // Sort: teams with points first (desc), then no-matches, then no-draw
+  // Within points: eliminated teams sink below alive ones at same points
   return entries.sort((a, b) => {
     if (a.totalPoints !== null && b.totalPoints !== null) {
-      return b.totalPoints - a.totalPoints;
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      // Same points: alive teams rank higher
+      if (a.bothEliminated && !b.bothEliminated) return 1;
+      if (!a.bothEliminated && b.bothEliminated) return -1;
+      return a.companyTeam.localeCompare(b.companyTeam);
     }
     if (a.totalPoints !== null) return -1;
     if (b.totalPoints !== null) return 1;
