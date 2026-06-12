@@ -16,6 +16,7 @@ import DrawBoard from "./DrawBoard";
 import AdminPanel from "./AdminPanel";
 import FormationBoard from "./FormationBoard";
 import ViewerBoard from "./ViewerBoard";
+import StandingsPanel from "./StandingsPanel";
 
 function ShareButton({ drawState }: { drawState: DrawState }) {
   const [copied, setCopied] = useState(false);
@@ -103,6 +104,8 @@ export default function DrawApp() {
     };
   }, []);
 
+  const [activeTab, setActiveTab] = useState<"draw" | "standings">("draw");
+
   const status = drawState?.status ?? "idle";
   const countdown = drawState?.countdown ?? null;
 
@@ -169,19 +172,70 @@ export default function DrawApp() {
       {/* Main content */}
       <main id="draw" className="flex-1 px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6 max-w-7xl mx-auto w-full">
         <p className="text-gray-500 text-xs uppercase tracking-[0.25em]">Tonight&apos;s country draw... presented by MHR United&apos;s Academy</p>
-        {isAdmin && <AdminPanel drawState={drawState}/>}
 
-        <DrawBoard drawState={drawState}/>
+        {/* ── Tab switcher ── */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab("draw")}
+            className="px-5 py-2 rounded-full text-sm font-semibold transition-all"
+            style={
+              activeTab === "draw"
+                ? {
+                    background: "rgba(255,255,255,0.1)",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    color: "#ffffff",
+                  }
+                : {
+                    background: "transparent",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    color: "rgba(255,255,255,0.4)",
+                  }
+            }
+          >
+            🎲 Draw
+          </button>
+          <button
+            onClick={() => setActiveTab("standings")}
+            className="px-5 py-2 rounded-full text-sm font-semibold transition-all"
+            style={
+              activeTab === "standings"
+                ? {
+                    background: "rgba(255,215,0,0.12)",
+                    border: "1px solid rgba(255,215,0,0.3)",
+                    color: "#FFD700",
+                  }
+                : {
+                    background: "transparent",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    color: "rgba(255,255,255,0.4)",
+                  }
+            }
+          >
+            🏆 Standings
+          </button>
+        </div>
 
-        {status === "idle" && !isAdmin && (
-            <div className="text-center py-8 text-gray-600 text-sm">
-              🎰 Waiting for the draw to begin… hang tight!
-            </div>
+        {/* ── Draw tab ── */}
+        {activeTab === "draw" && (
+          <>
+            {isAdmin && <AdminPanel drawState={drawState}/>}
+            <DrawBoard drawState={drawState}/>
+            {status === "idle" && !isAdmin && (
+              <div className="text-center py-8 text-gray-600 text-sm">
+                🎰 Waiting for the draw to begin… hang tight!
+              </div>
+            )}
+            {status === "idle" && isAdmin && (
+              <div className="text-center py-4 text-gray-600 text-sm">
+                Click <strong className="text-gray-400">Start Draw</strong> above when ready.
+              </div>
+            )}
+          </>
         )}
-        {status === "idle" && isAdmin && (
-            <div className="text-center py-4 text-gray-600 text-sm">
-              Click <strong className="text-gray-400">Start Draw</strong> above when ready.
-            </div>
+
+        {/* ── Standings tab ── */}
+        {activeTab === "standings" && (
+          <StandingsPanel drawState={drawState} />
         )}
       </main>
 
