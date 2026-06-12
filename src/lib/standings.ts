@@ -147,10 +147,16 @@ export function buildSweepstakesLeaderboard(
 
     const hasAnyPoints = majorPoints !== null || minorPoints !== null;
 
-    // A nation is eliminated if ESPN marks it so, OR if it has a knockout result
-    // showing alive=false, OR if group stage is complete and it didn't qualify
-    const majorElim = majorNation?.eliminated || (majorKO ? !majorKO.alive : false);
-    const minorElim = minorNation?.eliminated || (minorKO ? !minorKO.alive : false);
+    // A nation is only definitively eliminated from the group stage after
+    // playing all 3 games (ESPN can send premature notes after a single loss).
+    // In the knockout phase, use the bracket alive status instead.
+    const groupStageDone = (n: typeof majorNation) => (n?.played ?? 0) >= 3;
+    const majorElim =
+      (majorNation?.eliminated && groupStageDone(majorNation)) ||
+      (majorKO ? !majorKO.alive : false);
+    const minorElim =
+      (minorNation?.eliminated && groupStageDone(minorNation)) ||
+      (minorKO ? !minorKO.alive : false);
 
     return {
       companyTeam,

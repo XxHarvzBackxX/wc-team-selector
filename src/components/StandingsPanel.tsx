@@ -364,25 +364,29 @@ function GroupTeamRow({
   isOwned: boolean;
   isQualifying: boolean;
 }) {
+  // Only show eliminated styling once all 3 group games have been played.
+  // ESPN can send premature elimination notes after a single loss.
+  const isEliminated = team.eliminated && team.played >= 3;
+
   return (
     <div
       className="grid items-center px-3 py-1.5 text-sm transition-colors"
       style={{
         gridTemplateColumns: "2rem 1fr 2rem 2rem 2rem 2rem 3rem 2.5rem",
         borderTop: "1px solid rgba(255,255,255,0.05)",
-        background: team.eliminated
+        background: isEliminated
           ? "rgba(220,38,38,0.04)"
           : isOwned
             ? "rgba(255,220,0,0.05)"
             : "transparent",
-        opacity: team.eliminated ? 0.65 : 1,
+        opacity: isEliminated ? 0.65 : 1,
       }}
     >
       {/* Position */}
       <span
         className="text-[11px] font-bold"
         style={{
-          color: team.eliminated
+          color: isEliminated
             ? "rgba(252,165,165,0.5)"
             : isQualifying
               ? "rgba(100,220,120,0.7)"
@@ -394,27 +398,27 @@ function GroupTeamRow({
 
       {/* Team name + flag */}
       <span className="flex items-center gap-1.5 truncate">
-        <span className={team.eliminated ? "grayscale" : ""} style={{ display: "inline-flex" }}>
+        <span className={isEliminated ? "grayscale" : ""} style={{ display: "inline-flex" }}>
           <Flag name={team.name} size={14} />
         </span>
         <span
           className="truncate text-xs"
           style={{
-            color: team.eliminated
+            color: isEliminated
               ? "rgba(255,255,255,0.35)"
               : isOwned
                 ? "rgba(255,220,80,0.9)"
                 : "rgba(255,255,255,0.75)",
             fontWeight: isOwned ? 600 : 400,
-            textDecoration: team.eliminated ? "line-through" : "none",
+            textDecoration: isEliminated ? "line-through" : "none",
           }}
         >
           {team.name}
         </span>
-        {isOwned && !team.eliminated && (
+        {isOwned && !isEliminated && (
           <span className="text-[9px] text-yellow-500/60 shrink-0">★</span>
         )}
-        {team.eliminated && <EliminatedBadge size="xs" />}
+        {isEliminated && <EliminatedBadge size="xs" />}
       </span>
 
       {/* Stats */}
@@ -438,7 +442,7 @@ function GroupTeamRow({
         className="text-right text-sm font-bold"
         style={{
           fontFamily: "var(--font-orbitron), monospace",
-          color: team.eliminated
+          color: isEliminated
             ? "rgba(252,165,165,0.5)"
             : isOwned
               ? "rgba(255,220,80,0.9)"
