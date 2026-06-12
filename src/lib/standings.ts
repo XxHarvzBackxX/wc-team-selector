@@ -58,11 +58,27 @@ const ESPN_NAME_OVERRIDES: Record<string, string[]> = {
   "south korea": ["korea republic", "south korea", "republic of korea"],
   türkiye: ["turkey", "türkiye"],
   "ivory coast": ["côte d'ivoire", "ivory coast", "cote d'ivoire"],
-  "dr congo": ["dr congo", "democratic republic of congo", "congo dr"],
+  "dr congo": ["dr congo", "democratic republic of congo", "congo dr", "congo, dr"],
   "cape verde": ["cape verde", "cabo verde"],
   "bosnia and herzegovina": ["bosnia & herzegovina", "bosnia and herzegovina"],
   czechia: ["czech republic", "czechia"],
 };
+
+/**
+ * Reverse of ESPN_NAME_OVERRIDES: maps any known ESPN spelling (lowercase)
+ * back to our canonical name as used in TEAM_FLAGS / teams.ts.
+ * e.g. "united states" → "USA", "congo dr" → "DR Congo"
+ */
+const ESPN_TO_CANONICAL: Map<string, string> = new Map(
+  Object.entries(ESPN_NAME_OVERRIDES).flatMap(([canonical, aliases]) =>
+    aliases.map((alias) => [alias.toLowerCase(), canonical] as [string, string]),
+  ),
+);
+
+/** Convert an ESPN team display name to our canonical name (for flag lookup, etc.). */
+export function toCanonicalName(espnName: string): string {
+  return ESPN_TO_CANONICAL.get(espnName.toLowerCase()) ?? espnName;
+}
 
 export function findNation(
   name: string,

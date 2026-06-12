@@ -10,7 +10,7 @@ import {
   NationStanding,
   SweepstakesEntry,
 } from "@/types";
-import { buildSweepstakesLeaderboard, fetchBracket, fetchStandings } from "@/lib/standings";
+import { buildSweepstakesLeaderboard, fetchBracket, fetchStandings, toCanonicalName } from "@/lib/standings";
 import { TEAM_FLAGS } from "@/lib/teams";
 
 // ─── Flag helper ──────────────────────────────────────────────────────────────
@@ -343,12 +343,16 @@ function SweepstakesLeaderboard({ entries }: { entries: SweepstakesEntry[] }) {
 // ─── WC Group Table ───────────────────────────────────────────────────────────
 
 function isOwnedMatch(espnName: string, ownedNations: Set<string>): boolean {
+  // Convert ESPN name to canonical before comparing, so "United States" matches "USA" etc.
+  const canonical = toCanonicalName(espnName).toLowerCase();
+  for (const owned of ownedNations) {
+    if (canonical === owned.toLowerCase()) return true;
+  }
+  // Fallback: partial match on the raw ESPN name
   const lower = espnName.toLowerCase();
   for (const owned of ownedNations) {
     const ownedLower = owned.toLowerCase();
-    if (lower === ownedLower || lower.includes(ownedLower) || ownedLower.includes(lower)) {
-      return true;
-    }
+    if (lower.includes(ownedLower) || ownedLower.includes(lower)) return true;
   }
   return false;
 }
@@ -399,7 +403,7 @@ function GroupTeamRow({
       {/* Team name + flag */}
       <span className="flex items-center gap-1.5 truncate">
         <span className={isEliminated ? "grayscale" : ""} style={{ display: "inline-flex" }}>
-          <Flag name={team.name} size={14} />
+          <Flag name={toCanonicalName(team.name)} size={14} />
         </span>
         <span
           className="truncate text-xs"
@@ -416,7 +420,7 @@ function GroupTeamRow({
           {team.name}
         </span>
         {isOwned && !isEliminated && (
-          <span className="text-[9px] text-yellow-500/60 shrink-0">★</span>
+          <span className="text-[9px] text-yellow-500/60 shrink-0" title="Your sweepstake nation">★</span>
         )}
         {isEliminated && <EliminatedBadge size="xs" />}
       </span>
@@ -601,11 +605,14 @@ export default function StandingsPanel({ drawState }: StandingsPanelProps) {
       {groups !== null && groups.length > 0 && (
         <section>
           <h2
-            className="text-xs font-bold uppercase tracking-[0.3em] text-blue-400/70 mb-3"
+            className="text-xs font-bold uppercase tracking-[0.3em] text-blue-400/70 mb-1"
             style={{ fontFamily: "var(--font-orbitron), monospace" }}
           >
             ⚽ WC 2026 Group Standings
           </h2>
+          <p className="text-[10px] text-gray-600 mb-3">
+            ★ = nation drawn by someone in the sweepstakes &nbsp;·&nbsp; green position = qualifying
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {groups.map((group) => (
               <GroupTable key={group.group} group={group} ownedNations={ownedNations} />
