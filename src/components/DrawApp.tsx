@@ -174,10 +174,10 @@ export default function DrawApp() {
         <p className="text-gray-500 text-xs uppercase tracking-[0.25em]">Tonight&apos;s country draw... presented by MHR United&apos;s Academy</p>
 
         {/* ── Tab switcher ── */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setActiveTab("draw")}
-            className="px-5 py-2 rounded-full text-sm font-semibold transition-all"
+            className="px-7 py-3 rounded-full text-base font-semibold transition-all cursor-pointer"
             style={
               activeTab === "draw"
                 ? {
@@ -196,7 +196,7 @@ export default function DrawApp() {
           </button>
           <button
             onClick={() => setActiveTab("standings")}
-            className="px-5 py-2 rounded-full text-sm font-semibold transition-all"
+            className="px-7 py-3 rounded-full text-base font-semibold transition-all cursor-pointer"
             style={
               activeTab === "standings"
                 ? {

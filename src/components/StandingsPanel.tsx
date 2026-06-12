@@ -22,128 +22,199 @@ function Flag({ name, size = 20 }: { name: string; size?: number }) {
   );
 }
 
-// ─── Medal colours for top 3 ──────────────────────────────────────────────────
+// ─── Medal config ─────────────────────────────────────────────────────────────
 
-const MEDAL: Record<number, { border: string; glow: string; label: string }> = {
-  1: { border: "#FFD700", glow: "rgba(255,215,0,0.35)", label: "🥇" },
-  2: { border: "#C0C0C0", glow: "rgba(192,192,192,0.25)", label: "🥈" },
-  3: { border: "#CD7F32", glow: "rgba(205,127,50,0.25)", label: "🥉" },
-};
+const MEDAL = {
+  1: { border: "#FFD700", glow: "rgba(255,215,0,0.4)",  bg: "rgba(255,215,0,0.08)",  label: "🥇", color: "#FFD700",  podiumH: "h-28" },
+  2: { border: "#C0C0C0", glow: "rgba(192,192,192,0.3)", bg: "rgba(192,192,192,0.06)", label: "🥈", color: "#C0C0C0", podiumH: "h-20" },
+  3: { border: "#CD7F32", glow: "rgba(205,127,50,0.3)",  bg: "rgba(205,127,50,0.06)", label: "🥉", color: "#CD7F32",  podiumH: "h-14" },
+} as const;
 
-// ─── Sweepstakes Leaderboard ──────────────────────────────────────────────────
+// ─── Points display helper ────────────────────────────────────────────────────
+
+function pointsText(entry: SweepstakesEntry): string {
+  if (entry.status === "no-draw") return "Draw pending";
+  if (entry.totalPoints === null) return "N/A";
+  return String(entry.totalPoints);
+}
+
+// ─── Podium card (top 3) ──────────────────────────────────────────────────────
+
+function PodiumCard({ entry, rank }: { entry: SweepstakesEntry; rank: 1 | 2 | 3 }) {
+  const m = MEDAL[rank];
+  return (
+    <div className="flex flex-col items-center gap-0 flex-1 min-w-0">
+      {/* Card */}
+      <div
+        className="w-full rounded-xl px-3 py-4 flex flex-col items-center gap-2 text-center"
+        style={{
+          border: `1px solid ${m.border}`,
+          boxShadow: `0 0 20px ${m.glow}, 0 4px 24px rgba(0,0,0,0.5)`,
+          background: m.bg,
+        }}
+      >
+        <span className="text-2xl leading-none">{m.label}</span>
+        <span
+          className="font-black text-xl leading-tight truncate w-full"
+          style={{ fontFamily: "var(--font-orbitron), monospace", color: m.color }}
+        >
+          {pointsText(entry)}
+        </span>
+        <span className="text-sm font-semibold text-white/90 leading-snug truncate w-full">
+          {entry.companyTeam}
+        </span>
+        {/* Nations */}
+        <div className="flex flex-wrap justify-center items-center gap-1 mt-0.5">
+          {entry.majorTeam && (
+            <span className="flex items-center gap-1 text-[11px] text-gray-400">
+              <Flag name={entry.majorTeam} size={14} />
+              <span className="truncate max-w-[70px]">{entry.majorTeam}</span>
+              {entry.majorPoints !== null && (
+                <span className="text-gray-500">({entry.majorPoints})</span>
+              )}
+            </span>
+          )}
+          {entry.minorTeam && (
+            <>
+              <span className="text-gray-700 text-[10px]">+</span>
+              <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                <Flag name={entry.minorTeam} size={14} />
+                <span className="truncate max-w-[70px]">{entry.minorTeam}</span>
+                {entry.minorPoints !== null && (
+                  <span className="text-gray-500">({entry.minorPoints})</span>
+                )}
+              </span>
+            </>
+          )}
+          {!entry.majorTeam && !entry.minorTeam && (
+            <span className="text-[11px] text-gray-600 italic">No draw yet</span>
+          )}
+        </div>
+      </div>
+
+      {/* Podium block */}
+      <div
+        className={`w-full ${m.podiumH} rounded-b-lg`}
+        style={{
+          background: `linear-gradient(180deg, ${m.bg.replace("0.08", "0.15").replace("0.06", "0.1")} 0%, rgba(0,0,0,0.2) 100%)`,
+          borderLeft: `1px solid ${m.border}`,
+          borderRight: `1px solid ${m.border}`,
+          borderBottom: `1px solid ${m.border}`,
+          boxShadow: `0 8px 24px rgba(0,0,0,0.4)`,
+        }}
+      />
+    </div>
+  );
+}
+
+// ─── Regular leaderboard row (rank 4+) ────────────────────────────────────────
 
 function LeaderboardRow({ entry, rank }: { entry: SweepstakesEntry; rank: number }) {
-  const medal = MEDAL[rank];
-  const hasMedal = !!medal;
-
-  const pointsDisplay =
-    entry.status === "no-draw"
-      ? "Draw pending"
-      : entry.totalPoints === null
-        ? "N/A"
-        : String(entry.totalPoints);
-
-  const pointsColor =
-    entry.status === "no-draw"
-      ? "text-gray-600"
-      : entry.totalPoints === null
-        ? "text-gray-500"
-        : hasMedal
-          ? "text-yellow-300"
-          : "text-white";
+  const pts = pointsText(entry);
+  const hasPoints = entry.totalPoints !== null;
 
   return (
     <div
-      className="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors hover:bg-white/5"
-      style={
-        hasMedal
-          ? {
-              border: `1px solid ${medal.border}`,
-              boxShadow: `0 0 12px ${medal.glow}`,
-              background: "rgba(255,255,255,0.03)",
-            }
-          : { border: "1px solid rgba(255,255,255,0.07)" }
-      }
+      className="flex items-center gap-4 px-5 py-3.5 rounded-xl transition-colors hover:bg-white/5"
+      style={{ border: "1px solid rgba(255,255,255,0.08)" }}
     >
       {/* Rank */}
       <span
-        className="w-7 text-center text-sm font-bold shrink-0"
+        className="w-8 text-center text-sm font-bold shrink-0"
         style={{
           fontFamily: "var(--font-orbitron), monospace",
-          color: hasMedal ? medal.border : "rgba(255,255,255,0.25)",
+          color: "rgba(255,255,255,0.25)",
         }}
       >
-        {hasMedal ? medal.label : rank}
+        {rank}
       </span>
 
       {/* Company team name */}
-      <span className="flex-1 text-sm font-semibold text-gray-200 truncate">
+      <span className="flex-1 text-base font-semibold text-gray-200 truncate">
         {entry.companyTeam}
       </span>
 
-      {/* Nations + their individual points */}
+      {/* Nations */}
       <div className="flex items-center gap-2 shrink-0">
-        {entry.majorTeam ? (
+        {entry.majorTeam && (
           <span className="flex items-center gap-1 text-xs text-gray-400">
             <Flag name={entry.majorTeam} size={16} />
-            <span className="hidden sm:inline truncate max-w-[80px]">
-              {entry.majorTeam}
-            </span>
+            <span className="hidden sm:inline truncate max-w-[80px]">{entry.majorTeam}</span>
             <span className="text-gray-500">
               {entry.majorPoints !== null ? `(${entry.majorPoints}pt)` : "(-)"}
             </span>
           </span>
-        ) : null}
-
-        {entry.minorTeam ? (
+        )}
+        {entry.minorTeam && (
           <>
             <span className="text-gray-700 text-xs">+</span>
             <span className="flex items-center gap-1 text-xs text-gray-400">
               <Flag name={entry.minorTeam} size={16} />
-              <span className="hidden sm:inline truncate max-w-[80px]">
-                {entry.minorTeam}
-              </span>
+              <span className="hidden sm:inline truncate max-w-[80px]">{entry.minorTeam}</span>
               <span className="text-gray-500">
                 {entry.minorPoints !== null ? `(${entry.minorPoints}pt)` : "(-)"}
               </span>
             </span>
           </>
-        ) : null}
-
+        )}
         {!entry.majorTeam && !entry.minorTeam && (
           <span className="text-xs text-gray-600 italic">No draw yet</span>
         )}
       </div>
 
-      {/* Total points */}
+      {/* Points */}
       <span
-        className={`w-12 text-right text-base font-black shrink-0 ${pointsColor}`}
-        style={{ fontFamily: "var(--font-orbitron), monospace" }}
+        className="w-14 text-right text-base font-black shrink-0"
+        style={{
+          fontFamily: "var(--font-orbitron), monospace",
+          color: hasPoints ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.3)",
+        }}
       >
-        {pointsDisplay}
+        {pts}
       </span>
     </div>
   );
 }
 
-function SweepstakesLeaderboard({
-  entries,
-}: {
-  entries: SweepstakesEntry[];
-}) {
+// ─── Sweepstakes Leaderboard ──────────────────────────────────────────────────
+
+function SweepstakesLeaderboard({ entries }: { entries: SweepstakesEntry[] }) {
+  const top3 = entries.slice(0, 3);
+  const rest = entries.slice(3);
+
+  // Podium order: 2nd | 1st | 3rd
+  const podiumOrder = [
+    top3[1] ? { entry: top3[1], rank: 2 as const } : null,
+    top3[0] ? { entry: top3[0], rank: 1 as const } : null,
+    top3[2] ? { entry: top3[2], rank: 3 as const } : null,
+  ].filter(Boolean) as { entry: SweepstakesEntry; rank: 1 | 2 | 3 }[];
+
   return (
     <section>
       <h2
-        className="text-xs font-bold uppercase tracking-[0.3em] text-yellow-500/80 mb-3"
+        className="text-xs font-bold uppercase tracking-[0.3em] text-yellow-500/80 mb-5"
         style={{ fontFamily: "var(--font-orbitron), monospace" }}
       >
         🏆 Sweepstakes Leaderboard
       </h2>
-      <div className="flex flex-col gap-1.5">
-        {entries.map((entry, idx) => (
-          <LeaderboardRow key={entry.companyTeam} entry={entry} rank={idx + 1} />
-        ))}
-      </div>
+
+      {/* ── Podium ── */}
+      {top3.length > 0 && (
+        <div className="flex items-end gap-3 mb-6">
+          {podiumOrder.map(({ entry, rank }) => (
+            <PodiumCard key={entry.companyTeam} entry={entry} rank={rank} />
+          ))}
+        </div>
+      )}
+
+      {/* ── Remaining rows (4th place onwards) ── */}
+      {rest.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {rest.map((entry, idx) => (
+            <LeaderboardRow key={entry.companyTeam} entry={entry} rank={idx + 4} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
