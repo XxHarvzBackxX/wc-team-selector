@@ -104,7 +104,17 @@ export default function DrawApp() {
     };
   }, []);
 
-  const [activeTab, setActiveTab] = useState<"draw" | "standings">("draw");
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<"draw" | "standings">(
+    tabParam === "draw" ? "draw" : "standings"
+  );
+
+  function switchTab(tab: "draw" | "standings") {
+    setActiveTab(tab);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", tab);
+    window.history.replaceState(null, "", url.toString());
+  }
 
   const status = drawState?.status ?? "idle";
   const countdown = drawState?.countdown ?? null;
@@ -176,7 +186,7 @@ export default function DrawApp() {
         {/* ── Tab switcher ── */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setActiveTab("draw")}
+            onClick={() => switchTab("draw")}
             className="px-7 py-3 rounded-full text-base font-semibold transition-all cursor-pointer"
             style={
               activeTab === "draw"
@@ -195,7 +205,7 @@ export default function DrawApp() {
             🎲 Draw
           </button>
           <button
-            onClick={() => setActiveTab("standings")}
+            onClick={() => switchTab("standings")}
             className="px-7 py-3 rounded-full text-base font-semibold transition-all cursor-pointer"
             style={
               activeTab === "standings"
