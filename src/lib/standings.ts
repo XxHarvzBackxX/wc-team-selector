@@ -12,13 +12,13 @@ import { COMPANY_TEAMS, MAJOR_TEAMS, MINOR_TEAMS } from "./teams";
 // ─── Client-side fetches ──────────────────────────────────────────────────────
 
 export async function fetchStandings(): Promise<StandingsResponse> {
-  const res = await fetch("/api/standings");
+  const res = await fetch("/api/standings", { cache: "no-cache" });
   if (!res.ok) throw new Error(`standings fetch failed: ${res.status}`);
   return res.json() as Promise<StandingsResponse>;
 }
 
 export async function fetchBracket(): Promise<BracketResponse> {
-  const res = await fetch("/api/bracket");
+  const res = await fetch("/api/bracket", { cache: "no-cache" });
   if (!res.ok) throw new Error(`bracket fetch failed: ${res.status}`);
   return res.json() as Promise<BracketResponse>;
 }
@@ -60,7 +60,11 @@ const ESPN_NAME_OVERRIDES: Record<string, string[]> = {
   "ivory coast": ["côte d'ivoire", "ivory coast", "cote d'ivoire"],
   "dr congo": ["dr congo", "democratic republic of congo", "congo dr", "congo, dr"],
   "cape verde": ["cape verde", "cabo verde"],
-  "bosnia and herzegovina": ["bosnia & herzegovina", "bosnia and herzegovina"],
+  "bosnia and herzegovina": [
+    "bosnia & herzegovina",
+    "bosnia and herzegovina",
+    "bosnia-herzegovina",
+  ],
   czechia: ["czech republic", "czechia"],
 };
 
@@ -150,6 +154,7 @@ export function buildSweepstakesLeaderboard(
 ): SweepstakesEntry[] {
   const nationMap = buildNationMap(groups);
   const knockoutMap = buildKnockoutMap(knockoutResults);
+  const knockoutActive = knockoutResults.length > 0;
   const drawComplete = drawState?.status === "complete" || drawState?.status === "running";
 
   const entries: SweepstakesEntry[] = COMPANY_TEAMS.map((companyTeam) => {
@@ -189,12 +194,12 @@ export function buildSweepstakesLeaderboard(
     // playing all 3 games (ESPN can send premature notes after a single loss).
     // In the knockout phase, use the bracket alive status instead.
     const groupStageDone = (n: typeof majorNation) => (n?.played ?? 0) >= 3;
-    const majorElim =
-      (majorNation?.eliminated && groupStageDone(majorNation)) ||
-      (majorKO ? !majorKO.alive : false);
-    const minorElim =
-      (minorNation?.eliminated && groupStageDone(minorNation)) ||
-      (minorKO ? !minorKO.alive : false);
+    const majorElim = knockoutActive
+      ? !majorKO || !majorKO.alive
+      : Boolean(majorNation?.eliminated && groupStageDone(majorNation));
+    const minorElim = knockoutActive
+      ? !minorKO || !minorKO.alive
+      : Boolean(minorNation?.eliminated && groupStageDone(minorNation));
 
     return {
       companyTeam,

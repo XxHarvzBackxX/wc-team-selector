@@ -221,7 +221,7 @@ export default function DrawApp() {
                   }
             }
           >
-            🏆 Standings
+            🏆 Knockout
           </button>
         </div>
 

@@ -110,7 +110,7 @@ export async function GET(): Promise<Response> {
   try {
     const res = await fetch(ESPN_URL, {
       headers: { Accept: "application/json" },
-      next: { revalidate: 300 }, // cache for 5 minutes
+      cache: "no-store",
     });
 
     if (!res.ok) {
@@ -131,7 +131,7 @@ export async function GET(): Promise<Response> {
 
     return Response.json(body, {
       headers: {
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60",
+        "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=30",
       },
     });
   } catch (err) {

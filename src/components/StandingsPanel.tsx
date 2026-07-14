@@ -1,602 +1,273 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BracketResponse,
   DrawState,
-  GroupStanding,
   KnockoutRound,
   NationKnockoutResult,
-  NationStanding,
+  StandingsResponse,
   SweepstakesEntry,
 } from "@/types";
-import { buildESPNToCanonicalMap, buildSweepstakesLeaderboard, fetchBracket, fetchStandings, toCanonicalName } from "@/lib/standings";
+import {
+  buildSweepstakesLeaderboard,
+  fetchBracket,
+  fetchStandings,
+} from "@/lib/standings";
 import { TEAM_FLAGS } from "@/lib/teams";
 
-// ─── Flag helper ──────────────────────────────────────────────────────────────
+const REFRESH_INTERVAL_MS = 60_000;
 
-function Flag({ name, size = 20 }: { name: string; size?: number }) {
+const ROUND_LABELS: Record<KnockoutRound, string> = {
+  R32: "Round of 32",
+  R16: "Round of 16",
+  QF: "Quarter-finals",
+  SF: "Semi-finals",
+  Final: "Final",
+  Winner: "World champions",
+};
+
+const ROUND_ORDER: KnockoutRound[] = ["R32", "R16", "QF", "SF", "Final", "Winner"];
+
+function Flag({ name, size = 24 }: { name: string; size?: number }) {
   const code = TEAM_FLAGS[name];
-  if (!code) return null;
+  if (!code) return <span className="inline-block w-6" />;
+
   return (
+    // Flags are tiny, remote, display-only assets and do not benefit from image optimisation.
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={`https://flagcdn.com/w40/${code}.png`}
-      alt={name}
+      alt=""
       width={size}
       height={Math.round(size * 0.67)}
-      className="inline-block rounded-sm object-cover"
-      style={{ imageRendering: "auto" }}
+      className="inline-block rounded-sm object-cover shadow-sm"
     />
   );
 }
 
-// ─── Knockout round pill ──────────────────────────────────────────────────────
-
-const ROUND_LABELS: Record<KnockoutRound, string> = {
-  R32: "R32",
-  R16: "R16",
-  QF: "QF",
-  SF: "SF",
-  Final: "Final",
-  Winner: "🏆 Winner",
-};
-
-const ROUND_ALIVE_COLORS: Record<KnockoutRound, { bg: string; text: string; border: string }> = {
-  R32:    { bg: "rgba(59,130,246,0.15)",  text: "#93c5fd", border: "rgba(59,130,246,0.4)" },
-  R16:    { bg: "rgba(99,102,241,0.15)",  text: "#a5b4fc", border: "rgba(99,102,241,0.4)" },
-  QF:     { bg: "rgba(168,85,247,0.15)",  text: "#d8b4fe", border: "rgba(168,85,247,0.4)" },
-  SF:     { bg: "rgba(234,179,8,0.15)",   text: "#fde047", border: "rgba(234,179,8,0.4)" },
-  Final:  { bg: "rgba(249,115,22,0.18)",  text: "#fdba74", border: "rgba(249,115,22,0.5)" },
-  Winner: { bg: "rgba(255,215,0,0.2)",    text: "#FFD700", border: "rgba(255,215,0,0.6)" },
-};
-
-function KnockoutPill({ ko }: { ko: NationKnockoutResult }) {
-  if (!ko.alive) return null;
-  const style = ROUND_ALIVE_COLORS[ko.roundReached];
+function RoundPill({ result }: { result: NationKnockoutResult }) {
   return (
-    <span
-      className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
-      style={{
-        fontFamily: "var(--font-orbitron), monospace",
-        background: style.bg,
-        color: style.text,
-        border: `1px solid ${style.border}`,
-        letterSpacing: "0.05em",
-      }}
-    >
-      {ROUND_LABELS[ko.roundReached]}
+    <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-300">
+      {ROUND_LABELS[result.roundReached]}
     </span>
   );
 }
 
-// ─── ELIMINATED badge ─────────────────────────────────────────────────────────
-
-function EliminatedBadge({ size = "sm" }: { size?: "sm" | "xs" }) {
+function LiveNation({ name, result }: { name: string; result: NationKnockoutResult }) {
   return (
-    <span
-      className={`font-black uppercase tracking-widest shrink-0 ${
-        size === "xs" ? "text-[8px] px-1 py-px" : "text-[9px] px-1.5 py-0.5"
-      } rounded`}
-      style={{
-        fontFamily: "var(--font-orbitron), monospace",
-        background: "rgba(220,38,38,0.15)",
-        color: "rgba(252,165,165,0.85)",
-        border: "1px solid rgba(220,38,38,0.35)",
-        letterSpacing: "0.12em",
-      }}
-    >
-      OUT
-    </span>
+    <div className="flex min-w-0 items-center gap-2 rounded-lg border border-white/8 bg-white/[0.03] px-2.5 py-2">
+      <Flag name={name} />
+      <span className="min-w-0 truncate text-sm font-semibold text-white/85">{name}</span>
+      <RoundPill result={result} />
+    </div>
   );
 }
 
-// ─── Medal config ─────────────────────────────────────────────────────────────
+function remainingNations(entry: SweepstakesEntry) {
+  const nations: { name: string; result: NationKnockoutResult }[] = [];
 
-const MEDAL = {
-  1: { border: "#FFD700", glow: "rgba(255,215,0,0.4)",   bg: "rgba(255,215,0,0.08)",  label: "🥇", color: "#FFD700",  podiumH: "h-28" },
-  2: { border: "#C0C0C0", glow: "rgba(192,192,192,0.3)", bg: "rgba(192,192,192,0.06)", label: "🥈", color: "#C0C0C0", podiumH: "h-20" },
-  3: { border: "#CD7F32", glow: "rgba(205,127,50,0.3)",  bg: "rgba(205,127,50,0.06)", label: "🥉", color: "#CD7F32",  podiumH: "h-14" },
-} as const;
+  if (entry.majorTeam && entry.majorKnockout?.alive) {
+    nations.push({ name: entry.majorTeam, result: entry.majorKnockout });
+  }
+  if (entry.minorTeam && entry.minorKnockout?.alive) {
+    nations.push({ name: entry.minorTeam, result: entry.minorKnockout });
+  }
 
-// ─── Points display helper ────────────────────────────────────────────────────
-
-function pointsText(entry: SweepstakesEntry): string {
-  if (entry.status === "no-draw") return "Draw pending";
-  if (entry.totalPoints === null) return "N/A";
-  return String(entry.totalPoints);
+  return nations;
 }
 
-// ─── Nation chip (flag + name + knockout status) ──────────────────────────────
-
-function NationChip({
-  name,
-  points,
-  ko,
-  eliminated,
-  flagSize = 14,
-  showName = true,
-}: {
-  name: string;
-  points: number | null;
-  ko: NationKnockoutResult | null;
-  eliminated: boolean;
-  flagSize?: number;
-  showName?: boolean;
-}) {
-  const isOut = eliminated || (ko ? !ko.alive : false);
-  return (
-    <span className="flex items-center gap-1" style={{ opacity: isOut ? 0.55 : 1 }}>
-      <span className={isOut ? "grayscale" : ""} style={{ display: "inline-flex" }}>
-        <Flag name={name} size={flagSize} />
-      </span>
-      {showName && (
-        <span
-          className="truncate text-[11px]"
-          style={{
-            color: isOut ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.75)",
-            textDecoration: isOut ? "line-through" : "none",
-          }}
-        >
-          {name}
-        </span>
-      )}
-      {isOut ? <EliminatedBadge size="xs" /> : ko ? <KnockoutPill ko={ko} /> : null}
-      {points !== null && (
-        <span className="text-[10px] text-gray-500">({points}pt)</span>
-      )}
-    </span>
-  );
-}
-
-// ─── Podium card (top 3) ──────────────────────────────────────────────────────
-
-function PodiumCard({ entry, rank }: { entry: SweepstakesEntry; rank: 1 | 2 | 3 }) {
-  const m = MEDAL[rank];
-  const majorElim = entry.majorKnockout ? !entry.majorKnockout.alive : false;
-  const minorElim = entry.minorKnockout ? !entry.minorKnockout.alive : false;
+function StandingsRow({ entry, rank }: { entry: SweepstakesEntry; rank: number }) {
+  const nations = remainingNations(entry);
 
   return (
     <div
-      className="flex flex-col items-center gap-0 flex-1 min-w-0"
-      style={{ opacity: entry.bothEliminated ? 0.6 : 1 }}
+      className={`grid gap-3 px-4 py-4 sm:grid-cols-[3rem_minmax(9rem,1fr)_minmax(17rem,2fr)_5rem] sm:items-center ${
+        rank === 1 ? "bg-yellow-400/[0.06]" : "bg-white/[0.015]"
+      }`}
     >
-      <div
-        className="w-full rounded-xl px-3 py-4 flex flex-col items-center gap-2 text-center relative overflow-hidden"
-        style={{
-          border: `1px solid ${entry.bothEliminated ? "rgba(220,38,38,0.5)" : m.border}`,
-          boxShadow: entry.bothEliminated
-            ? "0 0 12px rgba(220,38,38,0.2)"
-            : `0 0 20px ${m.glow}, 0 4px 24px rgba(0,0,0,0.5)`,
-          background: entry.bothEliminated ? "rgba(220,38,38,0.06)" : m.bg,
-        }}
-      >
-        {/* ELIMINATED watermark */}
-        {entry.bothEliminated && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 10 }}>
-            <span
-              className="font-black text-red-500/25 rotate-[-20deg] text-4xl tracking-widest uppercase"
-              style={{ fontFamily: "var(--font-orbitron), monospace" }}
-            >
-              ELIMINATED
-            </span>
-          </div>
-        )}
-
-        <span className="text-2xl leading-none">{m.label}</span>
+      <div className="flex items-center gap-3 sm:contents">
         <span
-          className="font-black text-xl leading-tight truncate w-full"
-          style={{
-            fontFamily: "var(--font-orbitron), monospace",
-            color: entry.bothEliminated ? "rgba(252,165,165,0.7)" : m.color,
-          }}
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${
+            rank === 1
+              ? "bg-yellow-400 text-gray-950 shadow-[0_0_20px_rgba(250,204,21,0.25)]"
+              : "bg-white/5 text-white/35"
+          }`}
+          style={{ fontFamily: "var(--font-orbitron), monospace" }}
         >
-          {pointsText(entry)}
+          {rank}
         </span>
-        <span
-          className="text-sm font-semibold leading-snug truncate w-full"
-          style={{ color: entry.bothEliminated ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.9)" }}
-        >
+        <span className="min-w-0 flex-1 truncate text-base font-bold text-white sm:block">
           {entry.companyTeam}
         </span>
-
-        <div className="flex flex-col items-center gap-1 mt-0.5 w-full">
-          {entry.majorTeam && (
-            <NationChip name={entry.majorTeam} points={entry.majorPoints} ko={entry.majorKnockout} eliminated={majorElim} flagSize={13} showName />
-          )}
-          {entry.minorTeam && (
-            <NationChip name={entry.minorTeam} points={entry.minorPoints} ko={entry.minorKnockout} eliminated={minorElim} flagSize={13} showName />
-          )}
-          {!entry.majorTeam && !entry.minorTeam && (
-            <span className="text-[11px] text-gray-600 italic">No draw yet</span>
-          )}
-        </div>
-      </div>
-
-      {/* Podium block */}
-      <div
-        className={`w-full ${m.podiumH} rounded-b-lg`}
-        style={{
-          background: `linear-gradient(180deg, ${m.bg.replace("0.08", "0.15").replace("0.06", "0.1")} 0%, rgba(0,0,0,0.2) 100%)`,
-          borderLeft:   `1px solid ${entry.bothEliminated ? "rgba(220,38,38,0.3)" : m.border}`,
-          borderRight:  `1px solid ${entry.bothEliminated ? "rgba(220,38,38,0.3)" : m.border}`,
-          borderBottom: `1px solid ${entry.bothEliminated ? "rgba(220,38,38,0.3)" : m.border}`,
-          boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-        }}
-      />
-    </div>
-  );
-}
-
-// ─── Regular leaderboard row (rank 4+) ────────────────────────────────────────
-
-function LeaderboardRow({ entry, rank }: { entry: SweepstakesEntry; rank: number }) {
-  const pts = pointsText(entry);
-  const hasPoints = entry.totalPoints !== null;
-  const majorElim = entry.majorKnockout ? !entry.majorKnockout.alive : false;
-  const minorElim = entry.minorKnockout ? !entry.minorKnockout.alive : false;
-
-  return (
-    <div
-      className="flex items-center gap-4 px-5 py-3.5 rounded-xl transition-colors hover:bg-white/5"
-      style={{
-        border: entry.bothEliminated ? "1px solid rgba(220,38,38,0.25)" : "1px solid rgba(255,255,255,0.08)",
-        opacity: entry.bothEliminated ? 0.65 : 1,
-      }}
-    >
-      {/* Rank */}
-      <span
-        className="w-8 text-center text-sm font-bold shrink-0"
-        style={{ fontFamily: "var(--font-orbitron), monospace", color: "rgba(255,255,255,0.25)" }}
-      >
-        {rank}
-      </span>
-
-      {/* Company team name + eliminated badge */}
-      <span className="flex items-center gap-2 flex-1 min-w-0">
         <span
-          className="text-base font-semibold truncate"
-          style={{
-            color: entry.bothEliminated ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.9)",
-            textDecoration: entry.bothEliminated ? "line-through" : "none",
-          }}
+          className="text-right text-xl font-black text-yellow-300 sm:col-start-4 sm:row-start-1"
+          style={{ fontFamily: "var(--font-orbitron), monospace" }}
         >
-          {entry.companyTeam}
+          {entry.totalPoints ?? "–"}
+          <span className="ml-1 text-[9px] uppercase tracking-wider text-white/25">pts</span>
         </span>
-        {entry.bothEliminated && <EliminatedBadge />}
-      </span>
-
-      {/* Nations */}
-      <div className="flex items-center gap-2 shrink-0">
-        {entry.majorTeam && (
-          <NationChip name={entry.majorTeam} points={entry.majorPoints} ko={entry.majorKnockout} eliminated={majorElim} flagSize={15} showName={false} />
-        )}
-        {entry.minorTeam && (
-          <>
-            <span className="text-gray-700 text-xs">+</span>
-            <NationChip name={entry.minorTeam} points={entry.minorPoints} ko={entry.minorKnockout} eliminated={minorElim} flagSize={15} showName={false} />
-          </>
-        )}
-        {!entry.majorTeam && !entry.minorTeam && (
-          <span className="text-xs text-gray-600 italic">No draw yet</span>
-        )}
       </div>
 
-      {/* Points */}
-      <span
-        className="w-14 text-right text-base font-black shrink-0"
-        style={{
-          fontFamily: "var(--font-orbitron), monospace",
-          color: entry.bothEliminated
-            ? "rgba(252,165,165,0.5)"
-            : hasPoints
-              ? "rgba(255,255,255,0.9)"
-              : "rgba(255,255,255,0.3)",
-        }}
-      >
-        {pts}
-      </span>
+      <div className="grid gap-2 sm:col-start-3 sm:row-start-1 sm:grid-cols-2">
+        {nations.map(({ name, result }) => (
+          <LiveNation key={name} name={name} result={result} />
+        ))}
+      </div>
     </div>
   );
 }
 
-// ─── Sweepstakes Leaderboard ──────────────────────────────────────────────────
-
-function SweepstakesLeaderboard({ entries }: { entries: SweepstakesEntry[] }) {
-  const top3 = entries.slice(0, 3);
-  const rest = entries.slice(3);
-
-  // Podium order: 2nd | 1st | 3rd
-  const podiumOrder = [
-    top3[1] ? { entry: top3[1], rank: 2 as const } : null,
-    top3[0] ? { entry: top3[0], rank: 1 as const } : null,
-    top3[2] ? { entry: top3[2], rank: 3 as const } : null,
-  ].filter(Boolean) as { entry: SweepstakesEntry; rank: 1 | 2 | 3 }[];
-
-  return (
-    <section>
-      <h2
-        className="text-xs font-bold uppercase tracking-[0.3em] text-yellow-500/80 mb-5"
-        style={{ fontFamily: "var(--font-orbitron), monospace" }}
-      >
-        🏆 Sweepstakes Leaderboard
-      </h2>
-
-      {top3.length > 0 && (
-        <div className="flex items-end gap-3 mb-6">
-          {podiumOrder.map(({ entry, rank }) => (
-            <PodiumCard key={entry.companyTeam} entry={entry} rank={rank} />
-          ))}
-        </div>
-      )}
-
-      {rest.length > 0 && (
-        <div className="flex flex-col gap-2">
-          {rest.map((entry, idx) => (
-            <LeaderboardRow key={entry.companyTeam} entry={entry} rank={idx + 4} />
-          ))}
-        </div>
-      )}
-    </section>
-  );
+function currentRound(results: NationKnockoutResult[]): KnockoutRound | null {
+  return results
+    .filter((result) => result.alive)
+    .reduce<KnockoutRound | null>((latest, result) => {
+      if (!latest || ROUND_ORDER.indexOf(result.roundReached) > ROUND_ORDER.indexOf(latest)) {
+        return result.roundReached;
+      }
+      return latest;
+    }, null);
 }
-
-// ─── WC Group Table ───────────────────────────────────────────────────────────
-
-function GroupTeamRow({
-  team,
-  position,
-  isQualifying,
-  canonicalName,
-}: {
-  team: NationStanding;
-  position: number;
-  isQualifying: boolean;
-  canonicalName: string;
-}) {
-  const isEliminated = team.eliminated && team.played >= 3;
-
-  return (
-    <div
-      className="grid items-center px-3 py-1.5 text-sm transition-colors"
-      style={{
-        gridTemplateColumns: "2rem 1fr 2rem 2rem 2rem 2rem 3rem 2.5rem",
-        borderTop: "1px solid rgba(255,255,255,0.05)",
-        background: isEliminated ? "rgba(220,38,38,0.04)" : "transparent",
-        opacity: isEliminated ? 0.65 : 1,
-      }}
-    >
-      {/* Position */}
-      <span
-        className="text-[11px] font-bold"
-        style={{
-          color: isEliminated
-            ? "rgba(252,165,165,0.5)"
-            : isQualifying
-              ? "rgba(100,220,120,0.7)"
-              : "rgba(255,255,255,0.25)",
-        }}
-      >
-        {position}
-      </span>
-
-      {/* Team name + flag */}
-      <span className="flex items-center gap-1.5 truncate">
-        <span className={isEliminated ? "grayscale" : ""} style={{ display: "inline-flex" }}>
-          <Flag name={canonicalName} size={14} />
-        </span>
-        <span
-          className="truncate text-xs"
-          style={{
-            color: isEliminated ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.75)",
-            textDecoration: isEliminated ? "line-through" : "none",
-          }}
-        >
-          {team.name}
-        </span>
-        {isEliminated && <EliminatedBadge size="xs" />}
-      </span>
-
-      {/* Stats */}
-      {[team.played, team.won, team.drawn, team.lost].map((val, i) => (
-        <span key={i} className="text-center text-xs text-gray-400">{val}</span>
-      ))}
-      <span
-        className="text-center text-xs"
-        style={{
-          color:
-            team.goalDifference > 0
-              ? "rgba(100,220,120,0.8)"
-              : team.goalDifference < 0
-                ? "rgba(255,100,80,0.8)"
-                : "rgba(255,255,255,0.35)",
-        }}
-      >
-        {team.goalDifference > 0 ? `+${team.goalDifference}` : team.goalDifference}
-      </span>
-      <span
-        className="text-right text-sm font-bold"
-        style={{
-          fontFamily: "var(--font-orbitron), monospace",
-          color: isEliminated ? "rgba(252,165,165,0.5)" : "rgba(255,255,255,0.85)",
-        }}
-      >
-        {team.points}
-      </span>
-    </div>
-  );
-}
-
-function GroupTable({
-  group,
-  espnToCanonical,
-}: {
-  group: GroupStanding;
-  espnToCanonical: Map<string, string>;
-}) {
-  return (
-    <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
-      {/* Group header */}
-      <div
-        className="px-4 py-2 text-xs font-bold uppercase tracking-[0.25em]"
-        style={{
-          fontFamily: "var(--font-orbitron), monospace",
-          background: "rgba(255,255,255,0.06)",
-          color: "rgba(255,255,255,0.5)",
-        }}
-      >
-        {group.group}
-      </div>
-
-      {/* Column headers */}
-      <div
-        className="grid px-3 py-1 text-[10px] font-bold uppercase tracking-widest"
-        style={{ gridTemplateColumns: "2rem 1fr 2rem 2rem 2rem 2rem 3rem 2.5rem", color: "rgba(255,255,255,0.3)" }}
-      >
-        <span>#</span>
-        <span>Team</span>
-        <span className="text-center">P</span>
-        <span className="text-center">W</span>
-        <span className="text-center">D</span>
-        <span className="text-center">L</span>
-        <span className="text-center">GD</span>
-        <span className="text-right">Pts</span>
-      </div>
-
-      {group.teams.map((team, idx) => (
-        <GroupTeamRow
-          key={team.name}
-          team={team}
-          position={idx + 1}
-          isQualifying={idx < 2}
-          canonicalName={espnToCanonical.get(team.name) ?? toCanonicalName(team.name)}
-        />
-      ))}
-    </div>
-  );
-}
-
-// ─── Main StandingsPanel ──────────────────────────────────────────────────────
 
 interface StandingsPanelProps {
   drawState: DrawState | null;
 }
 
 export default function StandingsPanel({ drawState }: StandingsPanelProps) {
-  const [groups, setGroups] = useState<GroupStanding[] | null>(null);
+  const [standings, setStandings] = useState<StandingsResponse | null>(null);
   const [bracket, setBracket] = useState<BracketResponse | null>(null);
-  const [espnToCanonical, setEspnToCanonical] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fetchedAt, setFetchedAt] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const load = useCallback(async (background = false) => {
+    if (background) setRefreshing(true);
+    else setLoading(true);
 
-    async function load() {
-      setLoading(true);
+    try {
+      const [standingsData, bracketData] = await Promise.all([
+        fetchStandings(),
+        fetchBracket(),
+      ]);
+      setStandings(standingsData);
+      setBracket(bracketData);
       setError(null);
-      try {
-        const [standingsData, bracketData] = await Promise.all([
-          fetchStandings(),
-          fetchBracket().catch(() => null), // bracket is best-effort
-        ]);
-        if (!cancelled) {
-          setGroups(standingsData.groups);
-          setEspnToCanonical(buildESPNToCanonicalMap(standingsData.groups));
-          setBracket(bracketData);
-          setFetchedAt(standingsData.fetchedAt);
-        }
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Unknown error");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not refresh the knockout standings");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-
-    load();
-    const interval = setInterval(load, 5 * 60 * 1000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
   }, []);
 
-  const knockoutResults: NationKnockoutResult[] = bracket?.results ?? [];
-  const isKnockout = bracket?.phase === "knockout" && knockoutResults.length > 0;
+  useEffect(() => {
+    const initialLoad = window.setTimeout(() => void load(), 0);
+    const interval = window.setInterval(() => void load(true), REFRESH_INTERVAL_MS);
 
-  const leaderboard = buildSweepstakesLeaderboard(groups ?? [], drawState, knockoutResults);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void load(true);
+    };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      window.clearTimeout(initialLoad);
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [load]);
+
+  const allEntries = useMemo(
+    () => buildSweepstakesLeaderboard(standings?.groups ?? [], drawState, bracket?.results ?? []),
+    [bracket?.results, drawState, standings?.groups],
+  );
+  const activeEntries = allEntries.filter((entry) => !entry.bothEliminated);
+  const eliminatedCount = allEntries.filter((entry) => entry.bothEliminated).length;
+  const activeNationCount = new Set(
+    (bracket?.results ?? []).filter((result) => result.alive).map((result) => result.name),
+  ).size;
+  const round = currentRound(bracket?.results ?? []);
+  const fetchedAt = bracket?.fetchedAt ?? standings?.fetchedAt;
+
+  if (loading && !standings) {
+    return (
+      <div className="flex items-center justify-center gap-3 py-16 text-sm text-white/40">
+        <span className="animate-led-pulse inline-block h-2 w-2 rounded-full bg-emerald-400" />
+        Loading the knockout picture…
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-8">
-      {/* ── Knockout phase banner ── */}
-      {isKnockout && (
-        <div
-          className="flex items-center gap-2 px-4 py-2 rounded-lg"
-          style={{
-            background: "rgba(168,85,247,0.12)",
-            border: "1px solid rgba(168,85,247,0.3)",
-            color: "#d8b4fe",
-            fontFamily: "var(--font-orbitron), monospace",
-            fontSize: "0.7rem",
-            letterSpacing: "0.1em",
-            fontWeight: 700,
-          }}
-        >
-          <span className="animate-led-pulse inline-block w-2 h-2 rounded-full bg-purple-400 shrink-0" />
-          KNOCKOUT STAGE ACTIVE · Bonus points included
+    <div className="flex flex-col gap-5">
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-emerald-400/[0.08] via-white/[0.025] to-yellow-400/[0.05]">
+        <div className="flex flex-col gap-5 border-b border-white/8 px-5 py-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-300">
+              <span className="animate-led-pulse inline-block h-2 w-2 rounded-full bg-emerald-400" />
+              Live knockout standings
+            </div>
+            <h2
+              className="text-2xl font-black tracking-tight text-white sm:text-3xl"
+              style={{ fontFamily: "var(--font-orbitron), monospace" }}
+            >
+              Last teams standing
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-lg border border-white/8 bg-black/15 px-3 py-2">
+              <div className="text-lg font-black text-white">{activeEntries.length}</div>
+              <div className="text-[8px] uppercase tracking-widest text-white/30">Pools left</div>
+            </div>
+            <div className="rounded-lg border border-white/8 bg-black/15 px-3 py-2">
+              <div className="text-lg font-black text-white">{activeNationCount}</div>
+              <div className="text-[8px] uppercase tracking-widest text-white/30">Nations left</div>
+            </div>
+            <div className="rounded-lg border border-white/8 bg-black/15 px-3 py-2">
+              <div className="text-sm font-black text-yellow-300 sm:text-base">
+                {round ? ROUND_LABELS[round] : "Pending"}
+              </div>
+              <div className="text-[8px] uppercase tracking-widest text-white/30">Current round</div>
+            </div>
+          </div>
         </div>
-      )}
 
-      {/* ── Loading / error ── */}
-      {loading && (
-        <div className="flex items-center justify-center gap-3 py-8 text-gray-500 text-sm">
-          <span className="animate-led-pulse inline-block w-2 h-2 rounded-full bg-blue-500" />
-          Loading standings…
+        <div className="hidden grid-cols-[3rem_minmax(9rem,1fr)_minmax(17rem,2fr)_5rem] gap-3 border-b border-white/8 px-4 py-2 text-[9px] font-bold uppercase tracking-[0.18em] text-white/25 sm:grid">
+          <span>Rank</span>
+          <span>Team</span>
+          <span>Countries still in</span>
+          <span className="text-right">Score</span>
         </div>
-      )}
 
-      {error && !loading && (
-        <div
-          className="rounded-lg px-4 py-3 text-sm text-red-300 font-mono"
-          style={{ background: "rgba(180,30,30,0.15)", border: "1px solid rgba(180,30,30,0.3)" }}
-        >
-          ⚠️ Could not load standings: {error}
-        </div>
-      )}
-
-      {/* ── Sweepstakes Leaderboard ── */}
-      <SweepstakesLeaderboard entries={leaderboard} />
-
-      {/* ── WC Group Tables ── */}
-      {groups !== null && groups.length > 0 && (
-        <section>
-          <h2
-            className="text-xs font-bold uppercase tracking-[0.3em] text-blue-400/70 mb-1"
-            style={{ fontFamily: "var(--font-orbitron), monospace" }}
-          >
-            ⚽ WC 2026 Group Standings
-          </h2>
-          <p className="text-[10px] text-gray-600 mb-3">
-            Green position number = currently qualifying for knockout stage
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {groups.map((group) => (
-              <GroupTable key={group.group} group={group} espnToCanonical={espnToCanonical} />
+        {activeEntries.length > 0 ? (
+          <div className="divide-y divide-white/[0.06]">
+            {activeEntries.map((entry, index) => (
+              <StandingsRow key={entry.companyTeam} entry={entry} rank={index + 1} />
             ))}
           </div>
-        </section>
-      )}
+        ) : (
+          <div className="px-5 py-12 text-center text-sm text-white/40">
+            No active sweepstake teams found yet.
+          </div>
+        )}
+      </div>
 
-      {!loading && !error && groups !== null && groups.length === 0 && (
-        <div className="text-center py-8 text-gray-600 text-sm">
-          ⚽ Group stage standings not available yet — check back once matches begin!
+      <div className="flex flex-col gap-2 text-[10px] text-white/25 sm:flex-row sm:items-center sm:justify-between">
+        <span>
+          {eliminatedCount} eliminated {eliminatedCount === 1 ? "team has" : "teams have"} been removed
+          from the table.
+        </span>
+        <span className="flex items-center gap-2">
+          <span className={`inline-block h-1.5 w-1.5 rounded-full ${refreshing ? "animate-pulse bg-yellow-300" : "bg-emerald-400"}`} />
+          ESPN data · refreshes every minute
+          {fetchedAt ? ` · ${new Date(fetchedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}
+        </span>
+      </div>
+
+      {error && (
+        <div className="rounded-lg border border-red-400/20 bg-red-400/10 px-4 py-3 text-xs text-red-200">
+          Latest refresh failed; showing the last available standings. {error}
         </div>
-      )}
-
-      {fetchedAt && (
-        <p className="text-center text-[10px] text-gray-700">
-          Standings refreshed every 5 min · Last fetch: {new Date(fetchedAt).toLocaleTimeString()}
-        </p>
       )}
     </div>
   );
